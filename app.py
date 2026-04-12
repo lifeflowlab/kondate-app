@@ -1,105 +1,237 @@
 import streamlit as st
+import pandas as pd
+import datetime
+import os
+import random
+import time
 
-st.set_page_config(
-    page_title="Kondate AI",
-    layout="wide",
-)
+st.set_page_config(page_title="やさしいごはんAI", layout="centered")
 
-# ===== 横画面前提CSS =====
+LOG_FILE = "fatigue_log.csv"
+
+# =========================
+# STYLE（余白＋余韻設計）
+# =========================
 st.markdown("""
 <style>
-/* 全体を横画面寄せ */
-.block-container {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
+
+.block-container{
+    background:#f3f5f9;
+    padding-bottom:7rem;
 }
 
-/* 右・左の比率調整 */
-[data-testid="column"] {
-    padding: 0 10px;
+.title {
+    font-size:22px;
+    font-weight:800;
+    margin:12px 0;
 }
 
-/* 下部バー風エリア */
-.bottom-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: #ffffff;
-    border-top: 1px solid #ddd;
-    padding: 10px;
-    z-index: 999;
+.card {
+    background:white;
+    border-radius:22px;
+    padding:22px;
+    box-shadow:0 10px 28px rgba(0,0,0,0.08);
+    border-left:6px solid #2ecc71;
 }
 
-/* ボタン大きく（iPhone想定） */
+.big {
+    font-size:20px;
+    font-weight:800;
+    margin-top:10px;
+}
+
+.reason {
+    font-size:13px;
+    color:#666;
+    margin-top:10px;
+    line-height:1.6;
+}
+
 .stButton > button {
-    width: 100%;
-    height: 50px;
-    font-size: 16px;
+    height:58px;
+    border-radius:14px;
+    font-size:15px;
+    font-weight:700;
 }
+
+.done {
+    text-align:center;
+    font-size:16px;
+    font-weight:700;
+    color:#1f7a4d;
+    margin-top:16px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# ===== ヘッダー =====
-st.title("🍳 Kondate AI（横画面モード）")
-st.caption("横画面での使用を推奨しています")
+# =========================
+# DATA
+# =========================
+def load_df():
+    if os.path.exists(LOG_FILE):
+        try:
+            return pd.read_csv(LOG_FILE, encoding="utf-8")
+        except:
+            pass
+    return pd.DataFrame(columns=["time", "state", "food", "score"])
 
-# ===== レイアウト（左右分割） =====
-left, right = st.columns([1, 2])
 
-# ===== 左：操作パネル =====
-with left:
-    st.subheader("🔎 レシピ選択")
+if "df" not in st.session_state:
+    st.session_state.df = load_df()
 
-    search = st.text_input("レシピ検索")
-    category = st.selectbox("カテゴリ", ["和食", "中華", "洋食", "その他"])
+if "step" not in st.session_state:
+    st.session_state.step = "intent"
 
-    st.markdown("### お気に入り")
-    st.button("⭐ カレーライス")
-    st.button("⭐ 餃子")
-    st.button("⭐ 生姜焼き")
+if "intent" not in st.session_state:
+    st.session_state.intent = None
 
-    st.markdown("### 最近使った")
-    st.button("🥘 親子丼")
-    st.button("🍝 パスタ")
 
-# ===== 右：表示パネル =====
-with right:
-    st.subheader("📖 レシピ表示")
+# =========================
+# FOOD LOGIC
+# =========================
+INTENT_MAP = {
+    "軽くしたい": ["うどん", "おにぎり", "スープ"],
+    "ちゃんと食べたい": ["焼き魚定食", "親子丼", "野菜炒め定食"],
+    "好きに食べたい": ["カレー", "ラーメン", "とんかつ", "オムライス"]
+}
 
-    recipe = st.selectbox(
-        "レシピ",
-        ["カレーライス", "餃子", "生姜焼き"]
-    )
+REASON_MAP = {
+    "軽くしたい": "体を休める選択です",
+    "ちゃんと食べたい": "バランス重視の選択です",
+    "好きに食べたい": "満足感重視の選択です"
+}
 
-    st.markdown("### 材料")
-    st.write("- 玉ねぎ\n- 肉\n- じゃがいも\n- ルー")
 
-    st.markdown("### 手順")
-    st.write("1. 材料を切る\n2. 炒める\n3. 煮込む\n4. ルー投入")
+def calc_score(intent):
+    return {
+        "軽くしたい": 15,
+        "ちゃんと食べたい": 12,
+        "好きに食べたい": 10
+    }.get(intent, 10)
 
-    st.info("💡 AIアドバイス：弱火でじっくり煮込むと旨味UP")
 
-# ===== 下部バー（調味料コントロール） =====
-st.markdown("""
-<div class="bottom-bar">
-    <b>さしすせそコントロール</b>
-</div>
-""", unsafe_allow_html=True)
+def save(intent, food, score):
+    row = pd.DataFrame([{
+        "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "intent": intent,
+        "food": food,
+        "score": score
+    }])
 
-col1, col2, col3, col4, col5 = st.columns(5)
+    file_exists = os.path.exists(LOG_FILE)
 
-with col1:
-    st.button("砂糖")
-with col2:
-    st.button("塩")
-with col3:
-    st.button("醤油")
-with col4:
-    st.button("酢")
-with col5:
-    st.button("味噌")
+    row.to_csv(LOG_FILE,
+               mode="a" if file_exists else "w",
+               header=not file_exists,
+               index=False,
+               encoding="utf-8")
 
-st.slider("分量調整", 0, 10, 3)
+    st.session_state.df = pd.concat([st.session_state.df, row], ignore_index=True)
 
-st.button("🔥 ワンタップ投入（AI自動計算）")
+
+# =========================
+# HOME
+# =========================
+def page_home():
+
+    st.markdown('<div class="title">今日はどうしたいですか？</div>', unsafe_allow_html=True)
+
+    # =========================
+    # STEP 1：意思決定（ここが本体）
+    # =========================
+    if st.session_state.step == "intent":
+
+        st.write("### まず気持ちを選んでください")
+
+        intents = list(INTENT_MAP.keys())
+
+        for i in intents:
+            if st.button(i, use_container_width=True):
+                st.session_state.intent = i
+                st.session_state.step = "food"
+                st.rerun()
+
+    # =========================
+    # STEP 2：料理確定
+    # =========================
+    elif st.session_state.step == "food":
+
+        intent = st.session_state.intent
+
+        choices = random.sample(INTENT_MAP[intent], k=3)
+
+        st.markdown(f"""
+        <div class="card">
+            <div style="font-size:13px;color:#888;">あなたの選択</div>
+            <div class="big">{intent}</div>
+            <div class="reason">{REASON_MAP[intent]}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.write("")
+
+        st.write("### 🍽 今日のごはん")
+
+        for food in choices:
+            if st.button(food, use_container_width=True):
+
+                with st.spinner("決定しています..."):
+                    time.sleep(0.6)
+
+                score = calc_score(intent)
+                save(intent, food, score)
+
+                st.balloons()
+
+                st.session_state.step = "done"
+                st.session_state.final_food = food
+
+                st.rerun()
+
+    # =========================
+    # STEP 3：余韻（ここが最重要）
+    # =========================
+    elif st.session_state.step == "done":
+
+        st.markdown(f"""
+        <div class="card">
+            <div style="font-size:13px;color:#888;">🎉 今日のごはん</div>
+            <div class="big">{st.session_state.final_food}</div>
+            <div class="reason">あなたの選択で決まりました</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown('<div class="done">✔ 記録完了・今日はもう考えなくてOK</div>', unsafe_allow_html=True)
+
+        if st.button("もう一度決める", use_container_width=True):
+            st.session_state.step = "intent"
+            st.session_state.intent = None
+            st.rerun()
+
+
+# =========================
+# LOG
+# =========================
+def page_log():
+
+    st.title("記録")
+
+    df = st.session_state.df
+
+    if len(df) > 0:
+        st.dataframe(df.tail(10), use_container_width=True)
+        st.line_chart(df["score"])
+    else:
+        st.info("まだ記録がありません")
+
+
+# =========================
+# ROUTER
+# =========================
+page = st.radio("画面", ["ホーム", "記録"], horizontal=True)
+
+if page == "ホーム":
+    page_home()
+else:
+    page_log()
