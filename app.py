@@ -1,271 +1,105 @@
 import streamlit as st
-import random
-from datetime import datetime
 
-st.set_page_config(page_title="献立ガイド", layout="centered")
+st.set_page_config(
+    page_title="Kondate AI",
+    layout="wide",
+)
 
-# =====================
-# 🎨 アプリ風デザイン
-# =====================
-st.markdown(
-    """
+# ===== 横画面前提CSS =====
+st.markdown("""
 <style>
-body {
-    background-color: #f7f7f7;
-}
+/* 全体を横画面寄せ */
 .block-container {
     padding-top: 1rem;
-    padding-bottom: 2rem;
+    padding-bottom: 1rem;
 }
-.card {
-    background-color: white;
-    padding: 16px;
-    border-radius: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+
+/* 右・左の比率調整 */
+[data-testid="column"] {
+    padding: 0 10px;
 }
-.title {
-    font-size: 22px;
-    font-weight: bold;
+
+/* 下部バー風エリア */
+.bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #ffffff;
+    border-top: 1px solid #ddd;
+    padding: 10px;
+    z-index: 999;
 }
-.menu-title {
-    font-size: 18px;
-    font-weight: bold;
-}
-.menu-desc {
-    font-size: 14px;
-    color: #666;
-}
-button {
-    background-color: #ff8c42 !important;
-    color: white !important;
-    height: 55px;
-    border-radius: 12px;
+
+/* ボタン大きく（iPhone想定） */
+.stButton > button {
+    width: 100%;
+    height: 50px;
     font-size: 16px;
 }
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
-# =====================
-# セッション初期化
-# =====================
-if "step" not in st.session_state:
-    st.session_state.step = "setup"
+# ===== ヘッダー =====
+st.title("🍳 Kondate AI（横画面モード）")
+st.caption("横画面での使用を推奨しています")
 
-if "history" not in st.session_state:
-    st.session_state.history = []
+# ===== レイアウト（左右分割） =====
+left, right = st.columns([1, 2])
 
-if "favorites" not in st.session_state:
-    st.session_state.favorites = {}
+# ===== 左：操作パネル =====
+with left:
+    st.subheader("🔎 レシピ選択")
 
-if "selected_meal" not in st.session_state:
-    st.session_state.selected_meal = None
+    search = st.text_input("レシピ検索")
+    category = st.selectbox("カテゴリ", ["和食", "中華", "洋食", "その他"])
 
-if "show_recipe" not in st.session_state:
-    st.session_state.show_recipe = False
+    st.markdown("### お気に入り")
+    st.button("⭐ カレーライス")
+    st.button("⭐ 餃子")
+    st.button("⭐ 生姜焼き")
 
-if "last_state" not in st.session_state:
-    st.session_state.last_state = "ちょい疲れ"
+    st.markdown("### 最近使った")
+    st.button("🥘 親子丼")
+    st.button("🍝 パスタ")
 
-# =====================
-# レシピデータ
-# =====================
-recipe_data = {
-    "親子丼": [
-        "① 玉ねぎを薄切り",
-        "② 鶏肉を炒める",
-        "③ だし・醤油・砂糖を入れる",
-        "④ 溶き卵を流し入れる",
-        "⑤ ご飯に乗せて完成",
-    ],
-    "生姜焼き": [
-        "① 豚肉を焼く",
-        "② 玉ねぎを炒める",
-        "③ 醤油・みりん・生姜を加える",
-        "④ 全体を絡める",
-        "⑤ 盛り付けて完成",
-    ],
-    "カレー": [
-        "① 肉と野菜を炒める",
-        "② 水を入れて煮る",
-        "③ アクを取る",
-        "④ ルーを入れる",
-        "⑤ 10分煮込む",
-    ],
-    "野菜炒め": [
-        "① 野菜を切る",
-        "② 強火で炒める",
-        "③ 塩コショウ",
-        "④ 仕上げに醤油",
-        "⑤ 完成",
-    ],
-}
+# ===== 右：表示パネル =====
+with right:
+    st.subheader("📖 レシピ表示")
 
-# =====================
-# 初期設定
-# =====================
-if st.session_state.step == "setup":
-    st.markdown('<div class="title">🍳 まずは設定（1分）</div>', unsafe_allow_html=True)
-
-    work_style = st.radio("生活スタイル", ["平日中心", "不規則"])
-    cook_time = st.radio("料理時間", ["10分", "20分", "30分"])
-    priority = st.radio("重視すること", ["楽したい", "バランス", "満足感"])
-
-    if st.button("スタート"):
-        st.session_state.settings = {
-            "work_style": work_style,
-            "cook_time": cook_time,
-            "priority": priority,
-        }
-        st.session_state.step = "main"
-        st.rerun()
-
-# =====================
-# メイン画面
-# =====================
-elif st.session_state.step == "main":
-
-    st.markdown(
-        '<div class="title">🍳 今日の夕飯どうする？</div>', unsafe_allow_html=True
+    recipe = st.selectbox(
+        "レシピ",
+        ["カレーライス", "餃子", "生姜焼き"]
     )
 
-    state = st.radio(
-        "",
-        ["かなり疲れた", "ちょい疲れ", "余裕あり"],
-        index=["かなり疲れた", "ちょい疲れ", "余裕あり"].index(
-            st.session_state.last_state
-        ),
-    )
+    st.markdown("### 材料")
+    st.write("- 玉ねぎ\n- 肉\n- じゃがいも\n- ルー")
 
-    st.session_state.last_state = state
+    st.markdown("### 手順")
+    st.write("1. 材料を切る\n2. 炒める\n3. 煮込む\n4. ルー投入")
 
-    with st.spinner("献立を考え中..."):
-        now = datetime.now()
-        hour = now.hour
-        settings = st.session_state.settings
+    st.info("💡 AIアドバイス：弱火でじっくり煮込むと旨味UP")
 
-        # =====================
-        # ロジック
-        # =====================
-        plan = []
+# ===== 下部バー（調味料コントロール） =====
+st.markdown("""
+<div class="bottom-bar">
+    <b>さしすせそコントロール</b>
+</div>
+""", unsafe_allow_html=True)
 
-        if state == "かなり疲れた":
-            plan.append("時短")
-        elif state == "ちょい疲れ":
-            plan.append("バランス")
-        else:
-            plan.append("満足感")
+col1, col2, col3, col4, col5 = st.columns(5)
 
-        if hour >= 20:
-            plan.append("軽め")
+with col1:
+    st.button("砂糖")
+with col2:
+    st.button("塩")
+with col3:
+    st.button("醤油")
+with col4:
+    st.button("酢")
+with col5:
+    st.button("味噌")
 
-        if settings["priority"] == "楽したい":
-            plan.append("時短")
-        elif settings["priority"] == "満足感":
-            plan.append("満足感")
+st.slider("分量調整", 0, 10, 3)
 
-        menus = {
-            "時短": ["野菜炒め", "卵かけご飯", "冷やしうどん"],
-            "満足感": ["生姜焼き", "カレー", "親子丼"],
-            "軽め": ["焼き魚", "サラダ", "冷奴"],
-            "バランス": ["親子丼", "焼き魚定食", "野菜炒め"],
-        }
-
-        candidates = []
-        for p in plan:
-            candidates += menus.get(p, [])
-
-        candidates = [c for c in candidates if c not in st.session_state.history[-3:]]
-
-        random.shuffle(candidates)
-        suggestions = list(dict.fromkeys(candidates))[:3]
-
-    # =====================
-    # 導き
-    # =====================
-    st.markdown("👉 今日はこれでいきましょう")
-
-    if random.random() < 0.2:
-        st.markdown("✨ ちょっと違うのもアリ")
-
-    # =====================
-    # メニュー表示
-    # =====================
-    for i, meal in enumerate(suggestions):
-
-        st.markdown(
-            f"""
-        <div class="card">
-            <div class="menu-title">🍽 {meal}</div>
-            <div class="menu-desc">⏰ 約15分 / すぐできて満足</div>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
-
-        label = "これにする（おすすめ）" if i == 0 else "これにする"
-
-        if st.button(label, key=meal):
-            st.session_state.selected_meal = meal
-            st.session_state.history.append(meal)
-            st.session_state.favorites[meal] = (
-                st.session_state.favorites.get(meal, 0) + 1
-            )
-            st.rerun()
-
-    st.info(f"迷ったら 👉 {suggestions[0] if suggestions else ''}")
-    st.markdown("👉 今日はこれで十分です")
-
-    # =====================
-    # 決定後画面
-    # =====================
-    if st.session_state.selected_meal:
-
-        meal = st.session_state.selected_meal
-
-        data = recipe_data.get(meal, ["① 準備中です"])
-
-        st.markdown(
-            '<div class="title">🍳 今日の献立はこちら！</div>', unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f"""
-        <div class="card">
-            <div class="menu-title">🍽 {meal}</div>
-            <div class="menu-desc">👉 今日はこれで決まり</div>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
-
-        # ボタン群
-        col1, col2 = st.columns(2)
-
-        with col1:
-            if st.button("📖 レシピを見る"):
-                st.session_state.show_recipe = True
-
-        with col2:
-            st.button("🛒 買い物メモ")
-
-        # レシピ表示
-        if st.session_state.show_recipe:
-            st.markdown("### 📖 作り方")
-            for step in data:
-                st.markdown(f"- {step}")
-
-            if st.button("閉じる"):
-                st.session_state.show_recipe = False
-                st.rerun()
-
-        st.markdown("---")
-
-        if st.button("もう一度考える"):
-            st.session_state.selected_meal = None
-            st.session_state.show_recipe = False
-            st.rerun()
-
-        st.stop()
+st.button("🔥 ワンタップ投入（AI自動計算）")
