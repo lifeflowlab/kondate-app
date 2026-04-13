@@ -5,12 +5,12 @@ import os
 import random
 import time
 
-st.set_page_config(page_title="やさしいごはんAI", layout="centered")
+st.set_page_config(page_title="やさしいごはんAI", layout="centered", initial_sidebar_state="collapsed")
 
 LOG_FILE = "fatigue_log.csv"
 
 # =========================
-# STYLE（ウォームオレンジテーマ・和らげ版）
+# STYLE（iPhone対応・スクロール最小化）
 # =========================
 st.markdown("""
 <style>
@@ -21,18 +21,21 @@ st.markdown("""
 
 .block-container{
     background:linear-gradient(180deg, #fffaf6 0%, #fffcf8 50%, #fffaf6 100%);
-    padding-bottom:7rem;
+    padding:12px 16px 80px 16px;
     min-height:100vh;
+    max-width:100%;
 }
 
 html, body {
     background:#fffaf6;
+    margin:0;
+    padding:0;
 }
 
 .title {
-    font-size:28px;
+    font-size:24px;
     font-weight:900;
-    margin:12px 0;
+    margin:8px 0;
     background:linear-gradient(135deg, #d97706 0%, #ea580c 50%, #f59e0b 100%);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
@@ -42,11 +45,12 @@ html, body {
 
 .card {
     background:white;
-    border-radius:20px;
-    padding:24px;
+    border-radius:16px;
+    padding:16px;
     border:1px solid rgba(217,119,6,0.08);
     box-shadow:0 4px 12px rgba(217,119,6,0.04);
     transition:all 0.3s ease;
+    margin-bottom:12px;
 }
 
 .card:hover {
@@ -55,16 +59,16 @@ html, body {
 }
 
 .big {
-    font-size:20px;
+    font-size:18px;
     font-weight:700;
-    margin-top:10px;
+    margin-top:8px;
     color:#78350f;
 }
 
 .big-final {
-    font-size:56px;
+    font-size:48px;
     font-weight:900;
-    margin-top:16px;
+    margin-top:12px;
     background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
@@ -73,26 +77,26 @@ html, body {
 }
 
 .reason {
-    font-size:13px;
+    font-size:12px;
     color:#92400e;
-    margin-top:10px;
-    line-height:1.6;
+    margin-top:8px;
+    line-height:1.5;
 }
 
 .suggestion {
-    font-size:14px;
+    font-size:13px;
     color:#b45309;
-    margin-top:16px;
-    padding:16px;
+    margin-top:12px;
+    padding:12px;
     background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, rgba(245,158,11,0.04) 100%);
-    border-radius:12px;
-    border-left:4px solid #d97706;
+    border-radius:10px;
+    border-left:3px solid #d97706;
 }
 
 .stButton > button {
-    height:56px;
-    border-radius:12px;
-    font-size:15px;
+    height:48px;
+    border-radius:10px;
+    font-size:14px;
     font-weight:700;
     background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
     color:#fff;
@@ -113,59 +117,47 @@ html, body {
 
 .history-card {
     background:white;
-    border-radius:16px;
-    padding:16px;
-    margin-bottom:12px;
+    border-radius:14px;
+    padding:12px;
+    margin-bottom:8px;
     border:1px solid rgba(217,119,6,0.06);
     box-shadow:0 2px 8px rgba(217,119,6,0.03);
-    transition:all 0.3s ease;
-}
-
-.history-card:hover {
-    border-color:rgba(217,119,6,0.12);
-    box-shadow:0 4px 12px rgba(217,119,6,0.06);
 }
 
 .history-date {
-    font-size:11px;
+    font-size:10px;
     color:#a16207;
-    margin-bottom:6px;
+    margin-bottom:4px;
 }
 
 .history-food {
-    font-size:18px;
+    font-size:16px;
     font-weight:700;
     color:#d97706;
-    margin:8px 0;
+    margin:6px 0;
 }
 
 .history-intent {
-    font-size:12px;
+    font-size:11px;
     color:#fff;
     background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
     display:inline-block;
-    padding:4px 12px;
-    border-radius:8px;
+    padding:3px 10px;
+    border-radius:6px;
 }
 
 .stat-box {
     background:white;
-    border-radius:16px;
-    padding:20px;
+    border-radius:14px;
+    padding:14px;
     text-align:center;
     border:1px solid rgba(217,119,6,0.08);
     box-shadow:0 2px 8px rgba(217,119,6,0.03);
     transition:all 0.3s ease;
 }
 
-.stat-box:hover {
-    border-color:rgba(217,119,6,0.15);
-    transform:translateY(-2px);
-    box-shadow:0 4px 12px rgba(217,119,6,0.08);
-}
-
 .stat-number {
-    font-size:36px;
+    font-size:32px;
     font-weight:900;
     background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
     -webkit-background-clip:text;
@@ -174,151 +166,98 @@ html, body {
 }
 
 .stat-label {
-    font-size:12px;
+    font-size:11px;
     color:#a16207;
     margin-top:4px;
 }
 
 .fatigue-card {
     background:linear-gradient(135deg, rgba(217,119,6,0.04) 0%, rgba(245,158,11,0.03) 100%);
-    border-radius:20px;
-    padding:32px;
+    border-radius:16px;
+    padding:20px;
     border:1px solid rgba(217,119,6,0.1);
-    margin-bottom:20px;
+    margin-bottom:12px;
     transition: all 0.3s ease;
     box-shadow:0 4px 12px rgba(217,119,6,0.05);
 }
 
-.fatigue-card:hover {
-    border-color:rgba(217,119,6,0.18);
-    box-shadow:0 6px 16px rgba(217,119,6,0.08);
-    transform:translateY(-1px);
-}
-
 .fatigue-label {
-    font-size:14px;
+    font-size:12px;
     font-weight:600;
     color:#92400e;
-    margin-bottom:16px;
+    margin-bottom:8px;
     text-transform:uppercase;
-    letter-spacing:1px;
+    letter-spacing:0.5px;
 }
 
 .fatigue-value {
-    font-size:64px;
+    font-size:52px;
     font-weight:900;
     background:linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
     background-clip:text;
     text-align:center;
-    margin:12px 0;
+    margin:8px 0;
 }
 
 .welcome-section {
     background:linear-gradient(135deg, rgba(217,119,6,0.08) 0%, rgba(245,158,11,0.06) 100%);
-    border-radius:20px;
-    padding:28px;
-    margin-bottom:24px;
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:12px;
     text-align:center;
     border:1px solid rgba(217,119,6,0.12);
     box-shadow:0 4px 12px rgba(217,119,6,0.05);
 }
 
 .welcome-emoji {
-    font-size:52px;
-    margin-bottom:16px;
+    font-size:40px;
+    margin-bottom:8px;
     animation:bounce 2s infinite;
 }
 
 @keyframes bounce {
     0%, 100% { transform:translateY(0); }
-    50% { transform:translateY(-10px); }
+    50% { transform:translateY(-8px); }
 }
 
 .welcome-text {
-    font-size:18px;
+    font-size:16px;
     font-weight:800;
     background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
     background-clip:text;
-    margin-bottom:8px;
+    margin-bottom:4px;
 }
 
 .welcome-subtitle {
-    font-size:14px;
+    font-size:12px;
     color:#92400e;
-    line-height:1.6;
+    line-height:1.5;
 }
 
 .recommended-card {
     background:white;
-    border-radius:20px;
-    padding:24px;
+    border-radius:16px;
+    padding:16px;
     border:1px solid rgba(217,119,6,0.08);
-    margin-bottom:20px;
+    margin-bottom:12px;
     transition: all 0.3s ease;
     box-shadow:0 4px 12px rgba(217,119,6,0.05);
 }
 
-.recommended-card:hover {
-    border-color:rgba(217,119,6,0.15);
-    box-shadow:0 8px 20px rgba(217,119,6,0.1);
-    transform:translateY(-2px);
-}
-
 .recommended-label {
-    font-size:11px;
+    font-size:10px;
     color:#92400e;
     text-transform:uppercase;
-    letter-spacing:1.5px;
+    letter-spacing:1px;
     font-weight:700;
 }
 
 .recommended-food {
-    font-size:36px;
-    font-weight:900;
-    background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    background-clip:text;
-    margin:12px 0;
-}
-
-.recommended-reason {
-    font-size:13px;
-    color:#92400e;
-    margin-top:12px;
-    line-height:1.6;
-}
-
-.recommendation-item {
-    background:linear-gradient(135deg, rgba(217,119,6,0.04) 0%, rgba(245,158,11,0.03) 100%);
-    border-radius:16px;
-    padding:18px;
-    margin-bottom:12px;
-    border:1px solid rgba(217,119,6,0.08);
-    transition: all 0.3s ease;
-}
-
-.recommendation-item:hover {
-    border-color:rgba(217,119,6,0.15);
-    transform:translateX(4px);
-    box-shadow:0 4px 12px rgba(217,119,6,0.06);
-}
-
-.recommendation-title {
-    font-size:12px;
-    color:#92400e;
-    text-transform:uppercase;
-    letter-spacing:0.5px;
-    font-weight:700;
-    margin-bottom:6px;
-}
-
-.recommendation-food-name {
-    font-size:28px;
+    font-size:32px;
     font-weight:900;
     background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
     -webkit-background-clip:text;
@@ -327,56 +266,93 @@ html, body {
     margin:8px 0;
 }
 
-.recommendation-desc {
+.recommended-reason {
     font-size:12px;
     color:#92400e;
+    margin-top:8px;
     line-height:1.5;
+}
+
+.recommendation-item {
+    background:linear-gradient(135deg, rgba(217,119,6,0.04) 0%, rgba(245,158,11,0.03) 100%);
+    border-radius:14px;
+    padding:14px;
+    margin-bottom:8px;
+    border:1px solid rgba(217,119,6,0.08);
+    transition: all 0.3s ease;
+}
+
+.recommendation-title {
+    font-size:11px;
+    color:#92400e;
+    text-transform:uppercase;
+    letter-spacing:0.3px;
+    font-weight:700;
+    margin-bottom:4px;
+}
+
+.recommendation-food-name {
+    font-size:26px;
+    font-weight:900;
+    background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    margin:6px 0;
+}
+
+.recommendation-desc {
+    font-size:11px;
+    color:#92400e;
+    line-height:1.4;
 }
 
 .streak-badge {
     display:inline-block;
     background:linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
     color:#fff;
-    padding:10px 20px;
-    border-radius:12px;
-    font-size:13px;
+    padding:8px 16px;
+    border-radius:10px;
+    font-size:12px;
     font-weight:700;
-    margin-bottom:16px;
+    margin-bottom:12px;
     box-shadow:0 2px 8px rgba(217,119,6,0.2);
     animation:pulse 2s infinite;
 }
 
 @keyframes pulse {
     0%, 100% { transform:scale(1); }
-    50% { transform:scale(1.03); }
+    50% { transform:scale(1.02); }
 }
 
 .info-message {
     background:linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(59,130,246,0.04) 100%);
-    border-left:4px solid #22c55e;
+    border-left:3px solid #22c55e;
     border-radius:8px;
-    padding:12px;
-    font-size:13px;
+    padding:10px;
+    font-size:12px;
     color:#15803d;
     border:1px solid rgba(34,197,94,0.1);
+    margin-bottom:12px;
 }
 
 .warning-message {
     background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, rgba(245,158,11,0.05) 100%);
-    border-left:4px solid #d97706;
+    border-left:3px solid #d97706;
     border-radius:8px;
-    padding:12px;
-    font-size:13px;
+    padding:10px;
+    font-size:12px;
     color:#92400e;
     border:1px solid rgba(217,119,6,0.1);
+    margin-bottom:12px;
 }
 
 .progress-bar {
     background:linear-gradient(90deg, rgba(217,119,6,0.1) 0%, rgba(245,158,11,0.08) 100%);
-    height:6px;
+    height:5px;
     border-radius:3px;
     overflow:hidden;
-    margin-top:8px;
+    margin-top:6px;
 }
 
 .progress-fill {
@@ -390,7 +366,51 @@ hr {
     border:none;
     height:1px;
     background:linear-gradient(90deg, transparent, rgba(217,119,6,0.1), transparent);
-    margin:16px 0;
+    margin:12px 0;
+}
+
+/* ナビゲーション */
+.nav-button-home {
+    background:linear-gradient(135deg, #d97706 0%, #ea580c 100%) !important;
+    color:#fff !important;
+}
+
+.nav-button-record {
+    background:linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%) !important;
+    color:#fff !important;
+}
+
+.nav-button-home:hover {
+    box-shadow: 0 6px 12px rgba(217,119,6,0.3) !important;
+}
+
+.nav-button-record:hover {
+    box-shadow: 0 6px 12px rgba(139,92,246,0.3) !important;
+}
+
+/* iPhone対応 */
+@media (max-width: 390px) {
+    .block-container {
+        padding: 10px 12px 80px 12px;
+    }
+    
+    .title {
+        font-size: 22px;
+        margin: 6px 0;
+    }
+    
+    .fatigue-value {
+        font-size: 48px;
+    }
+    
+    .big-final {
+        font-size: 44px;
+    }
+    
+    .stButton > button {
+        height: 44px;
+        font-size: 13px;
+    }
 }
 
 </style>
@@ -444,7 +464,7 @@ INTENT_MAP = {
         "トースト", "サンドイッチ", "お粥", "雑炊", "うどん弁当"
     ],
     "栄養しっかり": [
-        "焼き魚定食", "親子丼", "野菜炒め定食", "豚汁定食", "目玉焼き定食",
+        "焼き魚定食", "親子丼", "野菜炒め定食", "豚汁定食", "��玉焼き定食",
         "生姜焼き定食", "唐揚げ定食", "ハンバーグ定食", "牛肉コロッケ定食",
         "ホイコーロー定食", "鶏そぼろ丼", "カツ丼", "天丼", "中華丼"
     ],
@@ -462,7 +482,6 @@ REASON_MAP = {
     "気にせずガッツリ": "満足感重視の選択です"
 }
 
-# 疲れ度合いごとの料理マップ（拡充）
 EASY_MEALS = [
     "うどん", "おにぎり", "スープ", "納豆ご飯", "トースト", "そば", 
     "冷麦", "雑炊", "そうめん", "やきおにぎり", "お粥", "みそ汁ご飯",
@@ -483,7 +502,6 @@ BALANCED_MEALS = [
     "かつ親子丼", "とり天丼", "さくら丼"
 ]
 
-# トッピング提案マップ（拡充）
 TOPPING_MAP = {
     "うどん": "プラスアルファでお惣菜のトッピング（天ぷらやねぎ）はどうかな?",
     "おにぎり": "プラスアルファで味噌汁やお漬物を添えると、より満足感がアップ",
@@ -658,7 +676,7 @@ def page_home():
         st.markdown(f"""
         <div class="welcome-section">
             <div class="welcome-emoji">🍚</div>
-            <div class="welcome-text">毎日のごはん選びをサポート</div>
+            <div class="welcome-text">ごはん選びをサポート</div>
             <div class="welcome-subtitle">{get_today_message()}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -666,14 +684,19 @@ def page_home():
         if streak > 0:
             st.markdown(f"""
             <div style="text-align:center;">
-                <span class="streak-badge">🔥 {streak}日連続で選択中！</span>
+                <span class="streak-badge">🔥 {streak}日連続！</span>
             </div>
             """, unsafe_allow_html=True)
 
-        st.write("")
+        st.markdown(f"""
+        <div class="fatigue-card">
+            <div class="fatigue-label">疲れ度合い</div>
+            <div class="fatigue-value">{st.session_state.fatigue_level}%</div>
+        </div>
+        """, unsafe_allow_html=True)
 
         fatigue = st.slider(
-            "疲れ度合いをドラッグで設定してください",
+            "設定",
             min_value=0,
             max_value=100,
             value=st.session_state.fatigue_level,
@@ -684,20 +707,11 @@ def page_home():
         
         st.session_state.fatigue_level = fatigue
 
-        st.markdown(f"""
-        <div class="fatigue-card">
-            <div class="fatigue-label">今日の疲れ度合いは?</div>
-            <div class="fatigue-value">{st.session_state.fatigue_level}%</div>
-        </div>
-        """, unsafe_allow_html=True)
-
         message = get_fatigue_message(st.session_state.fatigue_level)
         if st.session_state.fatigue_level == 0:
             st.markdown(f'<div class="warning-message">{message}</div>', unsafe_allow_html=True)
         else:
             st.markdown(f'<div class="info-message">{message}</div>', unsafe_allow_html=True)
-
-        st.write("")
 
         if st.session_state.fatigue_level == 0:
             if st.button("自分で選びたい", use_container_width=True):
@@ -710,54 +724,47 @@ def page_home():
                 rec = recommendations[0]
                 st.markdown(f"""
                 <div class="recommended-card">
-                    <div class="recommended-label">AIのおすすめ</div>
+                    <div class="recommended-label">おすすめ</div>
                     <div class="recommended-food">{rec['food']}</div>
                     <div class="recommended-reason">{REASON_MAP[rec['intent']]}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
-                st.write("")
-
-                col1, col2 = st.columns(2)
+                col1, col2 = st.columns(2, gap="small")
                 with col1:
-                    if st.button("自分で選びたい", use_container_width=True):
+                    if st.button("別の選択肢", use_container_width=True, key="alt1"):
                         st.session_state.step = "intent"
                         st.rerun()
 
                 with col2:
-                    if st.button("このおすすめで決定", use_container_width=True):
+                    if st.button("決定", use_container_width=True, key="dec1"):
                         score = calc_score(rec['intent'])
                         save(rec['intent'], rec['food'], score)
-                        
                         st.session_state.step = "done"
                         st.session_state.final_food = rec['food']
                         st.balloons()
                         st.rerun()
 
             else:
-                st.write("### AIの3つのおすすめ")
+                st.write("### おすすめ3選")
                 
                 for i, rec in enumerate(recommendations):
                     st.markdown(f"""
                     <div class="recommendation-item">
                         <div class="recommendation-title">{rec['description']}</div>
                         <div class="recommendation-food-name">{rec['food']}</div>
-                        <div class="recommendation-desc">{REASON_MAP[rec['intent']]}</div>
                     </div>
                     """, unsafe_allow_html=True)
 
-                    if st.button(f"このおすすめで決定（{rec['food']}）", use_container_width=True, key=f"recommend_{i}"):
+                    if st.button(f"{rec['food']}", use_container_width=True, key=f"recommend_{i}"):
                         score = calc_score(rec['intent'])
                         save(rec['intent'], rec['food'], score)
-                        
                         st.session_state.step = "done"
                         st.session_state.final_food = rec['food']
                         st.balloons()
                         st.rerun()
 
-                st.write("")
-
-                if st.button("自分で選びたい", use_container_width=True):
+                if st.button("別の選択肢", use_container_width=True):
                     st.session_state.step = "intent"
                     st.rerun()
 
@@ -765,15 +772,14 @@ def page_home():
 
         st.markdown('<div class="title">気持ちで選ぶ</div>', unsafe_allow_html=True)
 
-        st.write("### 今はどうしたいですか?")
+        st.write("### どうしたい？")
 
         intents = list(INTENT_MAP.keys())
 
         for i in intents:
-            if st.button(i, use_container_width=True):
+            if st.button(i, use_container_width=True, key=f"intent_{i}"):
                 st.session_state.intent = i
                 st.session_state.step = "food"
-                # ランダムに候補を事前選択（最大3つ）
                 available_foods = INTENT_MAP[i]
                 num_choices = min(3, len(available_foods))
                 st.session_state.food_choices = random.sample(available_foods, k=num_choices)
@@ -786,21 +792,18 @@ def page_home():
 
         st.markdown(f"""
         <div class="card">
-            <div style="font-size:13px;color:#92400e;">あなたの選択</div>
+            <div style="font-size:11px;color:#92400e;">選択中</div>
             <div class="big">{intent}</div>
             <div class="reason">{REASON_MAP[intent]}</div>
         </div>
         """, unsafe_allow_html=True)
 
-        st.write("")
-
-        st.write("### 今日のごはん候補")
+        st.write("### 候補")
 
         for food in choices:
             if st.button(food, use_container_width=True, key=f"food_choice_{food}"):
                 score = calc_score(intent)
                 save(intent, food, score)
-                
                 st.session_state.step = "done"
                 st.session_state.final_food = food
                 st.balloons()
@@ -808,13 +811,13 @@ def page_home():
 
     elif st.session_state.step == "done":
 
-        st.markdown('<div class="title">今日のごはんが決定しました!</div>', unsafe_allow_html=True)
+        st.markdown('<div class="title">決定完了!</div>', unsafe_allow_html=True)
 
         final_food = st.session_state.final_food
 
         st.markdown(f"""
         <div class="card">
-            <div style="font-size:13px;color:#92400e;">今日のごはん</div>
+            <div style="font-size:11px;color:#92400e;">今日のごはん</div>
             <div class="big-final">{final_food}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -825,12 +828,8 @@ def page_home():
             {TOPPING_MAP[final_food]}
             </div>
             """, unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="warning-message">「{final_food}」のトッピング提案がありません</div>', unsafe_allow_html=True)
 
-        st.write("")
-
-        if st.button("もう一度決める", use_container_width=True):
+        if st.button("もう一度", use_container_width=True):
             st.session_state.step = "fatigue"
             st.session_state.intent = None
             st.session_state.food_choices = None
@@ -849,16 +848,16 @@ def page_log():
 
     if len(df) > 0 and "food" in df.columns:
         
-        st.write("### あなたの食事スタイル")
+        st.write("### 統計")
         
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="small")
         
         with col1:
             total_meals = len(df)
             st.markdown(f"""
             <div class="stat-box">
                 <div class="stat-number">{total_meals}</div>
-                <div class="stat-label">回の食事を決めました</div>
+                <div class="stat-label">決定回数</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -870,25 +869,25 @@ def page_log():
             st.markdown(f"""
             <div class="stat-box">
                 <div class="stat-number">🍽</div>
-                <div class="stat-label">よく選ぶ: {most_food}</div>
+                <div class="stat-label">{most_food}</div>
             </div>
             """, unsafe_allow_html=True)
         
         st.write("")
         
         if "intent" in df.columns:
-            st.write("### あなたの選択パターン")
+            st.write("### パターン")
             intent_counts = df["intent"].value_counts()
             
             for intent, count in intent_counts.items():
                 percentage = (count / len(df)) * 100
-                st.write(f"**{intent}**: {count}回 ({percentage:.0f}%)")
+                st.write(f"**{intent}**: {count}回")
                 st.markdown(f'<div class="progress-bar"><div class="progress-fill" style="width:{percentage}%"></div></div>', unsafe_allow_html=True)
         
         st.write("")
-        st.write("### 最近の食事履歴")
+        st.write("### 最近")
         
-        recent_df = df.tail(20).iloc[::-1]
+        recent_df = df.tail(10).iloc[::-1]
         
         for idx, row in recent_df.iterrows():
             st.markdown(f"""
@@ -900,31 +899,46 @@ def page_log():
             """, unsafe_allow_html=True)
         
     else:
-        st.info("まだ記録がありません。ホームからごはんを決めてみましょう!")
+        st.info("記録がありません")
 
 
 # =========================
-# ROUTER
+# MAIN LAYOUT
 # =========================
-col1, col2 = st.columns(2)
+# コンテンツ表示
+if st.session_state.page == "home":
+    page_home()
+else:
+    page_log()
+
+# ナビゲーション（下部固定）
+st.markdown("<hr>", unsafe_allow_html=True)
+col1, col2 = st.columns(2, gap="small")
 
 with col1:
-    if st.button("ホーム", use_container_width=True, key="nav_home"):
+    if st.button("🏠 ホーム", use_container_width=True, key="nav_home"):
         st.session_state.page = "home"
         st.rerun()
 
 with col2:
-    if st.button("記録", use_container_width=True, key="nav_log"):
+    if st.button("📊 記録", use_container_width=True, key="nav_log"):
         st.session_state.page = "log"
         st.rerun()
 
-st.markdown("<hr>", unsafe_allow_html=True)
-
-if st.session_state.page == "home":
-    st.markdown('<div class="page-content">', unsafe_allow_html=True)
-    page_home()
-    st.markdown('</div>', unsafe_allow_html=True)
-else:
-    st.markdown('<div class="page-content">', unsafe_allow_html=True)
-    page_log()
-    st.markdown('</div>', unsafe_allow_html=True)
+# JavaScriptでボタンのクラスを追加（スタイル適用）
+st.markdown("""
+<script>
+    // ホームボタンを検索してクラスを追加
+    setTimeout(function() {
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(btn => {
+            if(btn.textContent.includes('ホーム')) {
+                btn.classList.add('nav-button-home');
+            }
+            if(btn.textContent.includes('記録')) {
+                btn.classList.add('nav-button-record');
+            }
+        });
+    }, 100);
+</script>
+""", unsafe_allow_html=True)
