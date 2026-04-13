@@ -10,104 +10,619 @@ st.set_page_config(page_title="やさしいごはんAI", layout="centered")
 LOG_FILE = "fatigue_log.csv"
 
 # =========================
-# STYLE（余白＋余韻設計）
+# STYLE（ウォームオレンジテーマ・和らげ版）
 # =========================
 st.markdown("""
 <style>
 
+* {
+    box-sizing: border-box;
+}
+
 .block-container{
-    background:#f3f5f9;
+    background:linear-gradient(180deg, #fffaf6 0%, #fffcf8 50%, #fffaf6 100%);
     padding-bottom:7rem;
+    min-height:100vh;
+}
+
+html, body {
+    background:#fffaf6;
 }
 
 .title {
-    font-size:22px;
-    font-weight:800;
+    font-size:28px;
+    font-weight:900;
     margin:12px 0;
+    background:linear-gradient(135deg, #d97706 0%, #ea580c 50%, #f59e0b 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    letter-spacing:-0.5px;
 }
 
 .card {
     background:white;
-    border-radius:22px;
-    padding:22px;
-    box-shadow:0 10px 28px rgba(0,0,0,0.08);
-    border-left:6px solid #2ecc71;
+    border-radius:20px;
+    padding:24px;
+    border:1px solid rgba(217,119,6,0.08);
+    box-shadow:0 4px 12px rgba(217,119,6,0.04);
+    transition:all 0.3s ease;
+}
+
+.card:hover {
+    border:1px solid rgba(217,119,6,0.15);
+    box-shadow:0 6px 16px rgba(217,119,6,0.08);
 }
 
 .big {
     font-size:20px;
-    font-weight:800;
+    font-weight:700;
     margin-top:10px;
+    color:#78350f;
+}
+
+.big-final {
+    font-size:56px;
+    font-weight:900;
+    margin-top:16px;
+    background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    line-height:1.1;
 }
 
 .reason {
     font-size:13px;
-    color:#666;
+    color:#92400e;
     margin-top:10px;
     line-height:1.6;
 }
 
+.suggestion {
+    font-size:14px;
+    color:#b45309;
+    margin-top:16px;
+    padding:16px;
+    background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, rgba(245,158,11,0.04) 100%);
+    border-radius:12px;
+    border-left:4px solid #d97706;
+}
+
 .stButton > button {
-    height:58px;
-    border-radius:14px;
+    height:56px;
+    border-radius:12px;
     font-size:15px;
+    font-weight:700;
+    background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+    color:#fff;
+    border:none;
+    transition: all 0.3s ease;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(217,119,6,0.2);
+}
+
+.stButton > button:active {
+    transform: translateY(0);
+}
+
+.history-card {
+    background:white;
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:12px;
+    border:1px solid rgba(217,119,6,0.06);
+    box-shadow:0 2px 8px rgba(217,119,6,0.03);
+    transition:all 0.3s ease;
+}
+
+.history-card:hover {
+    border-color:rgba(217,119,6,0.12);
+    box-shadow:0 4px 12px rgba(217,119,6,0.06);
+}
+
+.history-date {
+    font-size:11px;
+    color:#a16207;
+    margin-bottom:6px;
+}
+
+.history-food {
+    font-size:18px;
+    font-weight:700;
+    color:#d97706;
+    margin:8px 0;
+}
+
+.history-intent {
+    font-size:12px;
+    color:#fff;
+    background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+    display:inline-block;
+    padding:4px 12px;
+    border-radius:8px;
+}
+
+.stat-box {
+    background:white;
+    border-radius:16px;
+    padding:20px;
+    text-align:center;
+    border:1px solid rgba(217,119,6,0.08);
+    box-shadow:0 2px 8px rgba(217,119,6,0.03);
+    transition:all 0.3s ease;
+}
+
+.stat-box:hover {
+    border-color:rgba(217,119,6,0.15);
+    transform:translateY(-2px);
+    box-shadow:0 4px 12px rgba(217,119,6,0.08);
+}
+
+.stat-number {
+    font-size:36px;
+    font-weight:900;
+    background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+}
+
+.stat-label {
+    font-size:12px;
+    color:#a16207;
+    margin-top:4px;
+}
+
+.fatigue-card {
+    background:linear-gradient(135deg, rgba(217,119,6,0.04) 0%, rgba(245,158,11,0.03) 100%);
+    border-radius:20px;
+    padding:32px;
+    border:1px solid rgba(217,119,6,0.1);
+    margin-bottom:20px;
+    transition: all 0.3s ease;
+    box-shadow:0 4px 12px rgba(217,119,6,0.05);
+}
+
+.fatigue-card:hover {
+    border-color:rgba(217,119,6,0.18);
+    box-shadow:0 6px 16px rgba(217,119,6,0.08);
+    transform:translateY(-1px);
+}
+
+.fatigue-label {
+    font-size:14px;
+    font-weight:600;
+    color:#92400e;
+    margin-bottom:16px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+}
+
+.fatigue-value {
+    font-size:64px;
+    font-weight:900;
+    background:linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    text-align:center;
+    margin:12px 0;
+}
+
+.welcome-section {
+    background:linear-gradient(135deg, rgba(217,119,6,0.08) 0%, rgba(245,158,11,0.06) 100%);
+    border-radius:20px;
+    padding:28px;
+    margin-bottom:24px;
+    text-align:center;
+    border:1px solid rgba(217,119,6,0.12);
+    box-shadow:0 4px 12px rgba(217,119,6,0.05);
+}
+
+.welcome-emoji {
+    font-size:52px;
+    margin-bottom:16px;
+    animation:bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform:translateY(0); }
+    50% { transform:translateY(-10px); }
+}
+
+.welcome-text {
+    font-size:18px;
+    font-weight:800;
+    background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    margin-bottom:8px;
+}
+
+.welcome-subtitle {
+    font-size:14px;
+    color:#92400e;
+    line-height:1.6;
+}
+
+.recommended-card {
+    background:white;
+    border-radius:20px;
+    padding:24px;
+    border:1px solid rgba(217,119,6,0.08);
+    margin-bottom:20px;
+    transition: all 0.3s ease;
+    box-shadow:0 4px 12px rgba(217,119,6,0.05);
+}
+
+.recommended-card:hover {
+    border-color:rgba(217,119,6,0.15);
+    box-shadow:0 8px 20px rgba(217,119,6,0.1);
+    transform:translateY(-2px);
+}
+
+.recommended-label {
+    font-size:11px;
+    color:#92400e;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
     font-weight:700;
 }
 
-.done {
-    text-align:center;
-    font-size:16px;
+.recommended-food {
+    font-size:36px;
+    font-weight:900;
+    background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    margin:12px 0;
+}
+
+.recommended-reason {
+    font-size:13px;
+    color:#92400e;
+    margin-top:12px;
+    line-height:1.6;
+}
+
+.recommendation-item {
+    background:linear-gradient(135deg, rgba(217,119,6,0.04) 0%, rgba(245,158,11,0.03) 100%);
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:12px;
+    border:1px solid rgba(217,119,6,0.08);
+    transition: all 0.3s ease;
+}
+
+.recommendation-item:hover {
+    border-color:rgba(217,119,6,0.15);
+    transform:translateX(4px);
+    box-shadow:0 4px 12px rgba(217,119,6,0.06);
+}
+
+.recommendation-title {
+    font-size:12px;
+    color:#92400e;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
     font-weight:700;
-    color:#1f7a4d;
-    margin-top:16px;
+    margin-bottom:6px;
+}
+
+.recommendation-food-name {
+    font-size:28px;
+    font-weight:900;
+    background:linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    margin:8px 0;
+}
+
+.recommendation-desc {
+    font-size:12px;
+    color:#92400e;
+    line-height:1.5;
+}
+
+.streak-badge {
+    display:inline-block;
+    background:linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+    color:#fff;
+    padding:10px 20px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:700;
+    margin-bottom:16px;
+    box-shadow:0 2px 8px rgba(217,119,6,0.2);
+    animation:pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform:scale(1); }
+    50% { transform:scale(1.03); }
+}
+
+.info-message {
+    background:linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(59,130,246,0.04) 100%);
+    border-left:4px solid #22c55e;
+    border-radius:8px;
+    padding:12px;
+    font-size:13px;
+    color:#15803d;
+    border:1px solid rgba(34,197,94,0.1);
+}
+
+.warning-message {
+    background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, rgba(245,158,11,0.05) 100%);
+    border-left:4px solid #d97706;
+    border-radius:8px;
+    padding:12px;
+    font-size:13px;
+    color:#92400e;
+    border:1px solid rgba(217,119,6,0.1);
+}
+
+.progress-bar {
+    background:linear-gradient(90deg, rgba(217,119,6,0.1) 0%, rgba(245,158,11,0.08) 100%);
+    height:6px;
+    border-radius:3px;
+    overflow:hidden;
+    margin-top:8px;
+}
+
+.progress-fill {
+    background:linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
+    height:100%;
+    transition:width 0.5s ease;
+    border-radius:3px;
+}
+
+hr {
+    border:none;
+    height:1px;
+    background:linear-gradient(90deg, transparent, rgba(217,119,6,0.1), transparent);
+    margin:16px 0;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
-# DATA
+# DATA LOADING
 # =========================
 def load_df():
     if os.path.exists(LOG_FILE):
         try:
-            return pd.read_csv(LOG_FILE, encoding="utf-8")
-        except:
-            pass
-    return pd.DataFrame(columns=["time", "state", "food", "score"])
+            df = pd.read_csv(LOG_FILE, encoding="utf-8-sig")
+            df.columns = df.columns.str.strip()
+            return df
+        except Exception as e:
+            st.warning(f"ファイル読み込みエラー: {e}")
+    return pd.DataFrame(columns=["time", "intent", "food", "score"])
 
 
+# =========================
+# SESSION STATE INITIALIZATION
+# =========================
 if "df" not in st.session_state:
     st.session_state.df = load_df()
 
 if "step" not in st.session_state:
-    st.session_state.step = "intent"
+    st.session_state.step = "fatigue"
 
 if "intent" not in st.session_state:
     st.session_state.intent = None
 
+if "page" not in st.session_state:
+    st.session_state.page = "home"
+
+if "food_choices" not in st.session_state:
+    st.session_state.food_choices = None
+
+if "fatigue_level" not in st.session_state:
+    st.session_state.fatigue_level = 0
+
+if "final_food" not in st.session_state:
+    st.session_state.final_food = None
+
 
 # =========================
-# FOOD LOGIC
+# FOOD LOGIC（大幅に増加）
 # =========================
 INTENT_MAP = {
-    "軽くしたい": ["うどん", "おにぎり", "スープ"],
-    "ちゃんと食べたい": ["焼き魚定食", "親子丼", "野菜炒め定食"],
-    "好きに食べたい": ["カレー", "ラーメン", "とんかつ", "オムライス"]
+    "軽めであっさり": [
+        "うどん", "おにぎり", "スープ", "そば", "冷麦", "そうめん",
+        "トースト", "サンドイッチ", "お粥", "雑炊", "うどん弁当"
+    ],
+    "栄養しっかり": [
+        "焼き魚定食", "親子丼", "野菜炒め定食", "豚汁定食", "目玉焼き定食",
+        "生姜焼き定食", "唐揚げ定食", "ハンバーグ定食", "牛肉コロッケ定食",
+        "ホイコーロー定食", "鶏そぼろ丼", "カツ丼", "天丼", "中華丼"
+    ],
+    "気にせずガッツリ": [
+        "カレー", "ラーメン", "とんかつ", "オムライス", "ピザ",
+        "牛丼", "豚骨ラーメン", "味噌ラーメン", "塩ラーメン", "鶏そば",
+        "つけ麺", "パスタ", "ペペロンチーノ", "カルボナーラ", "ボロネーゼ",
+        "ステーキ", "焼肉丼", "大盛りチャーハン", "麻婆豆腐丼"
+    ]
 }
 
 REASON_MAP = {
-    "軽くしたい": "体を休める選択です",
-    "ちゃんと食べたい": "バランス重視の選択です",
-    "好きに食べたい": "満足感重視の選択です"
+    "軽めであっさり": "体を休める選択です",
+    "栄養しっかり": "バランス重視の選択です",
+    "気にせずガッツリ": "満足感重視の選択です"
 }
+
+# 疲れ度合いごとの料理マップ（拡充）
+EASY_MEALS = [
+    "うどん", "おにぎり", "スープ", "納豆ご飯", "トースト", "そば", 
+    "冷麦", "雑炊", "そうめん", "やきおにぎり", "お粥", "みそ汁ご飯",
+    "卵かけご飯", "のっぺい汁", "豆腐スープ", "わかめうどん", "しゅうまい"
+]
+
+NUTRITIOUS_MEALS = [
+    "焼き魚定食", "親子丼", "野菜炒め定食", "豚汁定食", "目玉焼き定食",
+    "生姜焼き定食", "唐揚げ定食", "ハンバーグ定食", "牛肉コロッケ定食",
+    "ホイコーロー定食", "鶏そぼろ丼", "ブリ大根定食", "鮭フライ定食",
+    "ビーフシチュー", "チキン南蛮定食", "豚の角煮定食", "鶏むね肉のソテー定食"
+]
+
+BALANCED_MEALS = [
+    "親子うどん", "卵かけご飯", "味噌汁とご飯", "野菜スープ", "玉子焼き定食",
+    "豆ご飯", "きのこご飯", "鶏そぼろ丼", "豚肉の柳川定食", "天玉うどん",
+    "きつねうどん", "月見蕎麦", "野菜天丼", "穴子丼", "ホタテ丼",
+    "かつ親子丼", "とり天丼", "さくら丼"
+]
+
+# トッピング提案マップ（拡充）
+TOPPING_MAP = {
+    "うどん": "プラスアルファでお惣菜のトッピング（天ぷらやねぎ）はどうかな?",
+    "おにぎり": "プラスアルファで味噌汁やお漬物を添えると、より満足感がアップ",
+    "スープ": "プラスアルファでサンドイッチやクラッカーと一緒だと良さそう",
+    "焼き魚定食": "プラスアルファで香の物やふりかけが活躍しそう",
+    "親子丼": "プラスアルファで温泉卵をトッピングするのも良さそう",
+    "野菜炒め定食": "プラスアルファで豚肉や海鮮をプラスすると、より満足度UP",
+    "カレー": "プラスアルファでチーズやバターをトッピングするのはいかが?",
+    "ラーメン": "プラスアルファで味玉やチャーシューをトッピングすると最高",
+    "とんかつ": "プラスアルファでキャベツたっぷり盛りで、さらにボリュームアップ",
+    "オムライス": "プラスアルファでチーズやキノコを混ぜると、より豪華に",
+    "納豆ご飯": "プラスアルファで温泉卵をのせると栄養価UP",
+    "トースト": "プラスアルファでチーズやジャムをトッピング",
+    "親子うどん": "プラスアルファで薬味ネギたっぷりで",
+    "卵かけご飯": "プラスアルファで海苔や刻みネギで風味UP",
+    "味噌汁とご飯": "プラスアルファで漬物や佃煮で満足度UP",
+    "野菜スープ": "プラスアルファでチーズやクルトン",
+    "玉子焼き定食": "プラスアルファで大根おろしで爽やかに",
+    "豚汁定食": "プラスアルファで七味唐辛子で味わい深く",
+    "目玉焼き定食": "プラスアルファでベーコンやソーセージを追加",
+    "そば": "プラスアルファで天ぷらや薬味で美味しさアップ",
+    "冷麦": "プラスアルファで夏野菜をトッピング",
+    "雑炊": "プラスアルファで卵やわかめで栄養UP",
+    "生姜焼き定食": "プラスアルファでキャベツをたっぷり",
+    "唐揚げ定食": "プラスアルファでレモンをかけてさっぱりに",
+    "豆ご飯": "プラスアルファで塩昆布でご飯がすすむ",
+    "きのこご飯": "プラスアルファで海苔をトッピング",
+    "そうめん": "プラスアルファで冷しトマトやキュウリを添えて",
+    "牛丼": "プラスアルファで卵黄をのせると絶品",
+    "ハンバーグ定食": "プラスアルファでデミグラスソースをたっぷり",
+    "ピザ": "プラスアルファでチーズやバジルをトッピング",
+    "パスタ": "プラスアルファでチーズ粉をかけて風味UP",
+    "鶏そぼろ丼": "プラスアルファで温泉卵をのせると最高",
+    "カツ丼": "プラスアルファで漬物を添えて",
+    "天丼": "プラスアルファで塩をかけて香りを引き立たせよう",
+    "中華丼": "プラスアルファでごま油をかけて風味UP",
+    "つけ麺": "プラスアルファでチャーシューを追加",
+}
+
+MOTIVATION_MESSAGES = [
+    "今日も一日頑張りましたね。ごはんで元気を取り戻そう",
+    "あなたの体が喜ぶごはんを選びましょう",
+    "毎日の食事が、明日の活力になります",
+    "疲れた時こそ、おいしいごはんが大事",
+    "今日のあなたにぴったりのごはんを見つけよう",
+    "食べることは自分をいたわること",
+    "良い選択が、良い明日を作ります"
+]
+
+
+def get_today_message():
+    """今日のモチベーションメッセージを取得"""
+    today = datetime.date.today().toordinal()
+    index = today % len(MOTIVATION_MESSAGES)
+    return MOTIVATION_MESSAGES[index]
+
+
+def get_streak_days():
+    """連続決定日数を計算"""
+    try:
+        df = st.session_state.df
+        if len(df) == 0:
+            return 0
+        
+        df_copy = df.copy()
+        df_copy['date'] = pd.to_datetime(df_copy['time'], format='mixed').dt.date
+        unique_dates = sorted(df_copy['date'].unique(), reverse=True)
+        
+        if len(unique_dates) == 0:
+            return 0
+        
+        streak = 1
+        today = datetime.date.today()
+        
+        for i, date in enumerate(unique_dates):
+            if i == 0:
+                if date != today:
+                    return 0
+            else:
+                if (unique_dates[i-1] - date).days != 1:
+                    break
+                streak += 1
+        
+        return streak
+    except Exception as e:
+        return 0
+
+
+def get_recommendations_by_fatigue(fatigue_level):
+    """疲れ度合いに基づいて提案を作成"""
+    if fatigue_level <= 30:
+        food = random.choice(INTENT_MAP["軽めであっさり"])
+        intent = "軽めであっさり"
+        return [{"food": food, "intent": intent, "type": "single"}]
+    
+    elif fatigue_level <= 60:
+        food = random.choice(INTENT_MAP["栄養しっかり"])
+        intent = "栄養しっかり"
+        return [{"food": food, "intent": intent, "type": "single"}]
+    
+    else:
+        easy_food = random.choice(EASY_MEALS)
+        nutritious_food = random.choice(NUTRITIOUS_MEALS)
+        balanced_food = random.choice(BALANCED_MEALS)
+        
+        retry_count = 0
+        while (easy_food == nutritious_food or easy_food == balanced_food or nutritious_food == balanced_food) and retry_count < 5:
+            if easy_food == nutritious_food:
+                nutritious_food = random.choice(NUTRITIOUS_MEALS)
+            if easy_food == balanced_food:
+                balanced_food = random.choice(BALANCED_MEALS)
+            if nutritious_food == balanced_food:
+                balanced_food = random.choice(BALANCED_MEALS)
+            retry_count += 1
+        
+        return [
+            {"food": easy_food, "intent": "軽めであっさり", "type": "easy", "description": "簡単にできる"},
+            {"food": nutritious_food, "intent": "栄養しっかり", "type": "nutritious", "description": "しっかり栄養"},
+            {"food": balanced_food, "intent": "栄養しっかり", "type": "balanced", "description": "簡単で栄養も"}
+        ]
+
+
+def get_fatigue_message(fatigue_level):
+    """疲れ度合いに基づくメッセージ"""
+    if fatigue_level == 0:
+        return "疲れ度合いをスライダーで設定してください"
+    elif fatigue_level <= 30:
+        return "今日はゆっくり休みましょう。軽めのごはんがおすすめです"
+    elif fatigue_level <= 60:
+        return "適度に疲れていますね。バランスの取れたごはんで回復しましょう"
+    else:
+        return "かなり疲れているみたいですね。3つの選択肢から選んでください"
 
 
 def calc_score(intent):
     return {
-        "軽くしたい": 15,
-        "ちゃんと食べたい": 12,
-        "好きに食べたい": 10
+        "軽めであっさり": 15,
+        "栄養しっかり": 12,
+        "気にせずガッツリ": 10
     }.get(intent, 10)
 
 
@@ -125,7 +640,7 @@ def save(intent, food, score):
                mode="a" if file_exists else "w",
                header=not file_exists,
                index=False,
-               encoding="utf-8")
+               encoding="utf-8-sig")
 
     st.session_state.df = pd.concat([st.session_state.df, row], ignore_index=True)
 
@@ -135,14 +650,122 @@ def save(intent, food, score):
 # =========================
 def page_home():
 
-    st.markdown('<div class="title">今日はどうしたいですか？</div>', unsafe_allow_html=True)
+    if st.session_state.step == "fatigue":
+        
+        st.markdown('<div class="title">今日のごはんを決めましょう</div>', unsafe_allow_html=True)
 
-    # =========================
-    # STEP 1：意思決定（ここが本体）
-    # =========================
-    if st.session_state.step == "intent":
+        streak = get_streak_days()
+        st.markdown(f"""
+        <div class="welcome-section">
+            <div class="welcome-emoji">🍚</div>
+            <div class="welcome-text">毎日のごはん選びをサポート</div>
+            <div class="welcome-subtitle">{get_today_message()}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        st.write("### まず気持ちを選んでください")
+        if streak > 0:
+            st.markdown(f"""
+            <div style="text-align:center;">
+                <span class="streak-badge">🔥 {streak}日連続で選択中！</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.write("")
+
+        fatigue = st.slider(
+            "疲れ度合いをドラッグで設定してください",
+            min_value=0,
+            max_value=100,
+            value=st.session_state.fatigue_level,
+            step=5,
+            label_visibility="collapsed",
+            key="fatigue_slider"
+        )
+        
+        st.session_state.fatigue_level = fatigue
+
+        st.markdown(f"""
+        <div class="fatigue-card">
+            <div class="fatigue-label">今日の疲れ度合いは?</div>
+            <div class="fatigue-value">{st.session_state.fatigue_level}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        message = get_fatigue_message(st.session_state.fatigue_level)
+        if st.session_state.fatigue_level == 0:
+            st.markdown(f'<div class="warning-message">{message}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="info-message">{message}</div>', unsafe_allow_html=True)
+
+        st.write("")
+
+        if st.session_state.fatigue_level == 0:
+            if st.button("自分で選びたい", use_container_width=True):
+                st.session_state.step = "intent"
+                st.rerun()
+        else:
+            recommendations = get_recommendations_by_fatigue(st.session_state.fatigue_level)
+
+            if len(recommendations) == 1:
+                rec = recommendations[0]
+                st.markdown(f"""
+                <div class="recommended-card">
+                    <div class="recommended-label">AIのおすすめ</div>
+                    <div class="recommended-food">{rec['food']}</div>
+                    <div class="recommended-reason">{REASON_MAP[rec['intent']]}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                st.write("")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("自分で選びたい", use_container_width=True):
+                        st.session_state.step = "intent"
+                        st.rerun()
+
+                with col2:
+                    if st.button("このおすすめで決定", use_container_width=True):
+                        score = calc_score(rec['intent'])
+                        save(rec['intent'], rec['food'], score)
+                        
+                        st.session_state.step = "done"
+                        st.session_state.final_food = rec['food']
+                        st.balloons()
+                        st.rerun()
+
+            else:
+                st.write("### AIの3つのおすすめ")
+                
+                for i, rec in enumerate(recommendations):
+                    st.markdown(f"""
+                    <div class="recommendation-item">
+                        <div class="recommendation-title">{rec['description']}</div>
+                        <div class="recommendation-food-name">{rec['food']}</div>
+                        <div class="recommendation-desc">{REASON_MAP[rec['intent']]}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    if st.button(f"このおすすめで決定（{rec['food']}）", use_container_width=True, key=f"recommend_{i}"):
+                        score = calc_score(rec['intent'])
+                        save(rec['intent'], rec['food'], score)
+                        
+                        st.session_state.step = "done"
+                        st.session_state.final_food = rec['food']
+                        st.balloons()
+                        st.rerun()
+
+                st.write("")
+
+                if st.button("自分で選びたい", use_container_width=True):
+                    st.session_state.step = "intent"
+                    st.rerun()
+
+    elif st.session_state.step == "intent":
+
+        st.markdown('<div class="title">気持ちで選ぶ</div>', unsafe_allow_html=True)
+
+        st.write("### 今はどうしたいですか?")
 
         intents = list(INTENT_MAP.keys())
 
@@ -150,20 +773,20 @@ def page_home():
             if st.button(i, use_container_width=True):
                 st.session_state.intent = i
                 st.session_state.step = "food"
+                # ランダムに候補を事前選択（最大3つ）
+                available_foods = INTENT_MAP[i]
+                num_choices = min(3, len(available_foods))
+                st.session_state.food_choices = random.sample(available_foods, k=num_choices)
                 st.rerun()
 
-    # =========================
-    # STEP 2：料理確定
-    # =========================
     elif st.session_state.step == "food":
 
         intent = st.session_state.intent
-
-        choices = random.sample(INTENT_MAP[intent], k=3)
+        choices = st.session_state.food_choices
 
         st.markdown(f"""
         <div class="card">
-            <div style="font-size:13px;color:#888;">あなたの選択</div>
+            <div style="font-size:13px;color:#92400e;">あなたの選択</div>
             <div class="big">{intent}</div>
             <div class="reason">{REASON_MAP[intent]}</div>
         </div>
@@ -171,42 +794,47 @@ def page_home():
 
         st.write("")
 
-        st.write("### 🍽 今日のごはん")
+        st.write("### 今日のごはん候補")
 
         for food in choices:
-            if st.button(food, use_container_width=True):
-
-                with st.spinner("決定しています..."):
-                    time.sleep(0.6)
-
+            if st.button(food, use_container_width=True, key=f"food_choice_{food}"):
                 score = calc_score(intent)
                 save(intent, food, score)
-
-                st.balloons()
-
+                
                 st.session_state.step = "done"
                 st.session_state.final_food = food
-
+                st.balloons()
                 st.rerun()
 
-    # =========================
-    # STEP 3：余韻（ここが最重要）
-    # =========================
     elif st.session_state.step == "done":
+
+        st.markdown('<div class="title">今日のごはんが決定しました!</div>', unsafe_allow_html=True)
+
+        final_food = st.session_state.final_food
 
         st.markdown(f"""
         <div class="card">
-            <div style="font-size:13px;color:#888;">🎉 今日のごはん</div>
-            <div class="big">{st.session_state.final_food}</div>
-            <div class="reason">あなたの選択で決まりました</div>
+            <div style="font-size:13px;color:#92400e;">今日のごはん</div>
+            <div class="big-final">{final_food}</div>
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown('<div class="done">✔ 記録完了・今日はもう考えなくてOK</div>', unsafe_allow_html=True)
+        if final_food in TOPPING_MAP:
+            st.markdown(f"""
+            <div class="suggestion">
+            {TOPPING_MAP[final_food]}
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="warning-message">「{final_food}」のトッピング提案がありません</div>', unsafe_allow_html=True)
+
+        st.write("")
 
         if st.button("もう一度決める", use_container_width=True):
-            st.session_state.step = "intent"
+            st.session_state.step = "fatigue"
             st.session_state.intent = None
+            st.session_state.food_choices = None
+            st.session_state.final_food = None
             st.rerun()
 
 
@@ -219,19 +847,84 @@ def page_log():
 
     df = st.session_state.df
 
-    if len(df) > 0:
-        st.dataframe(df.tail(10), use_container_width=True)
-        st.line_chart(df["score"])
+    if len(df) > 0 and "food" in df.columns:
+        
+        st.write("### あなたの食事スタイル")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            total_meals = len(df)
+            st.markdown(f"""
+            <div class="stat-box">
+                <div class="stat-number">{total_meals}</div>
+                <div class="stat-label">回の食事を決めました</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            if len(df) > 0 and df["food"].notna().sum() > 0:
+                most_food = df["food"].value_counts().index[0]
+            else:
+                most_food = "なし"
+            st.markdown(f"""
+            <div class="stat-box">
+                <div class="stat-number">🍽</div>
+                <div class="stat-label">よく選ぶ: {most_food}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.write("")
+        
+        if "intent" in df.columns:
+            st.write("### あなたの選択パターン")
+            intent_counts = df["intent"].value_counts()
+            
+            for intent, count in intent_counts.items():
+                percentage = (count / len(df)) * 100
+                st.write(f"**{intent}**: {count}回 ({percentage:.0f}%)")
+                st.markdown(f'<div class="progress-bar"><div class="progress-fill" style="width:{percentage}%"></div></div>', unsafe_allow_html=True)
+        
+        st.write("")
+        st.write("### 最近の食事履歴")
+        
+        recent_df = df.tail(20).iloc[::-1]
+        
+        for idx, row in recent_df.iterrows():
+            st.markdown(f"""
+            <div class="history-card">
+                <div class="history-date">{row['time']}</div>
+                <div class="history-food">{row['food']}</div>
+                <div class="history-intent"><span class="history-intent">{row['intent']}</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+        
     else:
-        st.info("まだ記録がありません")
+        st.info("まだ記録がありません。ホームからごはんを決めてみましょう!")
 
 
 # =========================
 # ROUTER
 # =========================
-page = st.radio("画面", ["ホーム", "記録"], horizontal=True)
+col1, col2 = st.columns(2)
 
-if page == "ホーム":
+with col1:
+    if st.button("ホーム", use_container_width=True, key="nav_home"):
+        st.session_state.page = "home"
+        st.rerun()
+
+with col2:
+    if st.button("記録", use_container_width=True, key="nav_log"):
+        st.session_state.page = "log"
+        st.rerun()
+
+st.markdown("<hr>", unsafe_allow_html=True)
+
+if st.session_state.page == "home":
+    st.markdown('<div class="page-content">', unsafe_allow_html=True)
     page_home()
+    st.markdown('</div>', unsafe_allow_html=True)
 else:
+    st.markdown('<div class="page-content">', unsafe_allow_html=True)
     page_log()
+    st.markdown('</div>', unsafe_allow_html=True)
