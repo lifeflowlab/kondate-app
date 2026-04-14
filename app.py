@@ -562,15 +562,69 @@ MOTIVATION_MESSAGES = [
     "毎日の食事が、明日の活力になります",
     "疲れた時こそ、おいしいごはんが大事",
     "今日のあなたにぴったりのごはんを見つけよう",
-    "食べることは自分をいたわるこ��",
+    "食べることは自分をいたわること",
     "良い選択が、良い明日を作ります"
 ]
+
+# ③ 決定後の満足感を演出する一言コメント
+SATISFACTION_MAP = {
+    "軽めであっさり": [
+        "体にやさしい選択ですね✨",
+        "軽やかに、でも大切に食べましょう🍃",
+        "体を大切にした選択です😊"
+    ],
+    "栄養しっかり": [
+        "体が喜ぶ選択ですね💪",
+        "バランスの取れた良い選択です🥗",
+        "しっかり栄養を取って元気に！✨"
+    ],
+    "気にせずガッツリ": [
+        "良い選択です！思いっきり楽しんで🔥",
+        "今日はしっかり食べてエネルギー充電💫",
+        "満足感たっぷりの選択ですね！🎉"
+    ]
+}
 
 
 def get_today_message():
     today = datetime.date.today().toordinal()
     index = today % len(MOTIVATION_MESSAGES)
     return MOTIVATION_MESSAGES[index]
+
+
+# ⑤ 時間帯判定
+def get_time_zone():
+    """現在時刻に基づいて時間帯を判定する"""
+    hour = datetime.datetime.now().hour
+    if 5 <= hour < 11:
+        return "朝食"
+    elif 11 <= hour < 15:
+        return "昼食"
+    elif 15 <= hour < 22:
+        return "夕食"
+    else:
+        return "夜食"
+
+
+# ① 直近選択の除外
+def get_recent_foods(days=7):
+    """過去days日以内に選択されたメニューのリストを返す"""
+    try:
+        df = st.session_state.df
+        if len(df) == 0:
+            return []
+        df_copy = df.copy()
+        df_copy['date'] = pd.to_datetime(df_copy['time'], format='%Y-%m-%d %H:%M').dt.date
+        recent = df_copy[df_copy['date'] >= cutoff]
+        return recent['food'].tolist()
+    except Exception:
+        return []
+
+
+def filter_recent(pool, recent_foods):
+    """直近で選ばれたメニューを除外する（全除外の場合はフルプールを返す）"""
+    filtered = [f for f in pool if f not in recent_foods]
+    return filtered if filtered else pool
 
 
 def get_streak_days():
@@ -604,36 +658,68 @@ def get_streak_days():
 
 
 def get_recommendations_by_fatigue(fatigue_level):
+    recent_foods = get_recent_foods()
+    time_zone = get_time_zone()
+
     if fatigue_level <= 30:
-        food = random.choice(INTENT_MAP["軽めであっさり"])
+        pool = filter_recent(INTENT_MAP["軽めであっさり"], recent_foods)
+        food = random.choice(pool)
         intent = "軽めであっさり"
         return [{"food": food, "intent": intent, "type": "single"}]
 
     elif fatigue_level <= 60:
-        food = random.choice(INTENT_MAP["栄養しっかり"])
-        intent = "栄養しっかり"
+        # ⑤ 時間帯ロジック：時間帯に合わせてインテントを調整
+        if time_zone in ("朝食", "夜食"):
+            intent = "軽めであっさり"
+            pool = filter_recent(INTENT_MAP["軽めであっさり"], recent_foods)
+        elif time_zone == "昼食":
+            intent = "栄養しっかり"
+            pool = filter_recent(INTENT_MAP["栄養しっかり"], recent_foods)
+        else:  # 夕食
+            intent = "気にせずガッツリ"
+            pool = filter_recent(INTENT_MAP["気にせずガッツリ"], recent_foods)
+        food = random.choice(pool)
         return [{"food": food, "intent": intent, "type": "single"}]
 
     else:
-        easy_food = random.choice(EASY_MEALS)
-        nutritious_food = random.choice(NUTRITIOUS_MEALS)
-        balanced_food = random.choice(BALANCED_MEALS)
+        # ① 直近除外フィルタを適用
+        easy_pool = filter_recent(EASY_MEALS, recent_foods)
+        nutritious_pool = filter_recent(NUTRITIOUS_MEALS, recent_foods)
+        balanced_pool = filter_recent(BALANCED_MEALS, recent_foods)
+
+        easy_food = random.choice(easy_pool)
+        nutritious_food = random.choice(nutritious_pool)
+        balanced_food = random.choice(balanced_pool)
 
         retry_count = 0
         while (easy_food == nutritious_food or easy_food == balanced_food or nutritious_food == balanced_food) and retry_count < 5:
             if easy_food == nutritious_food:
-                nutritious_food = random.choice(NUTRITIOUS_MEALS)
+                nutritious_food = random.choice(nutritious_pool)
             if easy_food == balanced_food:
-                balanced_food = random.choice(BALANCED_MEALS)
+                balanced_food = random.choice(balanced_pool)
             if nutritious_food == balanced_food:
-                balanced_food = random.choice(BALANCED_MEALS)
+                balanced_food = random.choice(balanced_pool)
             retry_count += 1
 
-        return [
-            {"food": easy_food, "intent": "軽めであっさり", "type": "easy", "description": "簡単にできる"},
-            {"food": nutritious_food, "intent": "栄養しっかり", "type": "nutritious", "description": "しっかり栄養"},
-            {"food": balanced_food, "intent": "栄養しっかり", "type": "balanced", "description": "簡単で栄養も"}
+        # ② ラベル強化（疲労60以上）
+        recommendations = [
+            {"food": easy_food, "intent": "軽めであっさり", "type": "easy", "description": "今すぐできる・軽い"},
+            {"food": nutritious_food, "intent": "栄養しっかり", "type": "nutritious", "description": "栄養重視・ボリューム"},
+            {"food": balanced_food, "intent": "栄養しっかり", "type": "balanced", "description": "バランス型・無難"}
         ]
+
+        # ⑤ 時間帯ロジック：時間帯に合わせて順序を調整
+        time_zone_priority = {
+            "朝食": ["easy", "nutritious", "balanced"],
+            "昼食": ["nutritious", "easy", "balanced"],
+            "夕食": ["balanced", "nutritious", "easy"],
+            "夜食": ["easy", "nutritious", "balanced"],
+        }
+        priority = time_zone_priority.get(time_zone, ["easy", "nutritious", "balanced"])
+        type_order = {rec["type"]: rec for rec in recommendations}
+        recommendations = [type_order[t] for t in priority if t in type_order]
+
+        return recommendations
 
 
 def get_fatigue_message(fatigue_level):
@@ -843,6 +929,17 @@ def page_home():
         </div>
         """, unsafe_allow_html=True)
 
+        # ③ 満足感を演出する一言コメント
+        selected_intent = st.session_state.selected_intent
+        if selected_intent in SATISFACTION_MAP:
+            messages = SATISFACTION_MAP[selected_intent]
+            msg = messages[datetime.date.today().toordinal() % len(messages)]
+            st.markdown(f"""
+            <div class="info-message" style="text-align:center;font-size:14px;font-weight:600;">
+                {msg}
+            </div>
+            """, unsafe_allow_html=True)
+
         if final_food in TOPPING_MAP:
             st.markdown(f"""
             <div class="suggestion">
@@ -897,6 +994,16 @@ def page_log():
                 <div class="stat-label">{most_food}</div>
             </div>
             """, unsafe_allow_html=True)
+
+        # ④ 累計スコア表示
+        st.write("")
+        total_score = int(df["score"].fillna(0).sum()) if "score" in df.columns else 0
+        st.markdown(f"""
+        <div class="stat-box">
+            <div class="stat-number">{total_score}</div>
+            <div class="stat-label">累計スコア</div>
+        </div>
+        """, unsafe_allow_html=True)
 
         st.write("")
 
