@@ -1,57 +1,56 @@
 import random
 import datetime
 
-# ===== 日替わり候補 =====
-def get_today_candidates():
 
+def get_today_candidates():
     today = datetime.date.today().isoformat()
     random.seed(today)
 
-    foods = [
+    return random.sample([
         "カレー", "ラーメン", "焼肉", "パスタ",
         "寿司", "うどん", "鍋", "炒飯"
-    ]
-
-    return random.sample(foods, 3)
+    ], 3)
 
 
-# ===== 意向デフォルト =====
-def get_default_intent():
-    hour = datetime.datetime.now().hour
+def get_default_fatigue():
+    return 50
 
-    if hour < 10:
-        return "時短"
-    elif hour < 15:
-        return "節約"
-    elif hour < 21:
-        return "がっつり"
+
+def get_food_by_fatigue(fatigue):
+
+    if fatigue <= 20:
+        category = "reward"
+    elif fatigue <= 40:
+        category = "heavy"
+    elif fatigue <= 60:
+        category = "normal"
+    elif fatigue <= 80:
+        category = "light"
     else:
-        return "ヘルシー"
+        category = "recovery"
 
-
-# ===== 並び替え（中身固定）=====
-def sort_by_intent(candidates, intent):
-
-    priority_map = {
-        "節約": ["パスタ", "炒飯"],
-        "ヘルシー": ["鍋"],
-        "がっつり": ["焼肉", "カレー"],
-        "時短": ["うどん", "炒飯"],
+    food_map = {
+        "reward": ["焼肉", "寿司", "ステーキ", "カレー"],
+        "heavy": ["ラーメン", "パスタ", "炒飯"],
+        "normal": ["親子丼", "うどん", "定食"],
+        "light": ["そば", "雑炊", "スープ"],
+        "recovery": ["おかゆ", "うどん", "スープ"]
     }
 
-    if intent not in priority_map:
-        return candidates
+    import random
+    food = random.choice(food_map[category])
 
-    priority = priority_map[intent]
-
-    return sorted(candidates, key=lambda x: 0 if x in priority else 1)
+    return food, category
 
 
-# ===== 強制決定 =====
-def force_pick(candidates):
-    return candidates[0] if candidates else "カレー"
+def get_mode_label(category):
 
+    labels = {
+        "reward": "ご褒美モード",
+        "heavy": "しっかりモード",
+        "normal": "バランスモード",
+        "light": "軽めモード",
+        "recovery": "回復モード"
+    }
 
-# ===== 今日のラベル =====
-def get_day_label(food):
-    return f"今日は『{food}の日』です 🍽"
+    return labels.get(category, "バランスモード")

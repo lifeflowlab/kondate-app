@@ -186,3 +186,5 @@ time,fatigue,time_slot,mood,result,veg_score,health_score,veg,score,priority,dat
 ,,,,,,,,,,2026-04-16 17:47:12,select_food,カレー
 ,,,,,,,,,,2026-04-16 17:47:23,final_choice,寿司
 ,,,,,,,,,,2026-04-16 17:48:11,mood,疲れた
+,,,,,,,,,,2026-04-16 18:22:58,final,うどん
+,,,,,,,,,,2026-04-16 18:23:00,final,パスタ

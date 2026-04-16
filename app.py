@@ -1,18 +1,23 @@
 import streamlit as st
-from src.ui_home import render_app
+
+from src.state import init_state
+from src.ui_home import render_home
+from src.ui_ingredients import render_ingredients
+from src.ui_result import render_result
 from src.utils import apply_global_style
 
-st.set_page_config(page_title="やさしいごはんAI", layout="centered")
+
+st.set_page_config(page_title="ごはんAI", layout="centered")
 
 apply_global_style()
+init_state()
 
-# ===== セッション初期化 =====
-if "page" not in st.session_state:
-    st.session_state.page = "home"
 
-# ===== 画面遷移 =====
-def go(page):
-    st.session_state.page = page
-    st.rerun()
+if st.session_state.page == "home":
+    render_home()
 
-render_app(go)
+elif st.session_state.page == "ingredients":
+    render_ingredients()
+
+elif st.session_state.page == "result":
+    render_result()

@@ -1,113 +1,89 @@
 import streamlit as st
-import time
+import random
+
 from src.logic import (
     get_today_candidates,
-    get_default_intent,
-    sort_by_intent,
-    force_pick,
-    get_day_label
+    get_default_fatigue,
+    get_food_by_fatigue,
+    get_mode_label
 )
-from src.data import save_log
+
+from src.state import set_page, set_selected, reset_candidates
 
 
-def render_app(go):
+def render_home():
 
-    if st.session_state.page == "home":
-        render_home(go)
+    st.title("🍽 ごはんAI")
 
+    # =========================
+    # 候補初期化
+    # =========================
+    if not st.session_state.candidates:
+        reset_candidates(get_today_candidates())
 
-# =========================
-# HOME
-# =========================
-def render_home(go):
+    # =========================
+    # ★重要：疲れ度初期化（50固定保証）
+    # =========================
+    if (
+        "fatigue" not in st.session_state
+        or st.session_state.fatigue is None
+        or st.session_state.fatigue == 3   # ← 旧バグ対策（ここ重要）
+    ):
+        st.session_state.fatigue = get_default_fatigue()
 
-    st.title("🍽 ごはん決める")
-
-    # ===== 初期化 =====
-    if "candidates" not in st.session_state:
-        st.session_state.candidates = get_today_candidates()
-
-    if "intent" not in st.session_state:
-        st.session_state.intent = get_default_intent()
-
-    # ===== 意向ボタン =====
-    st.markdown("### 少しだけ条件")
-
-    intents = ["なし", "節約", "ヘルシー", "がっつり", "時短"]
-    cols = st.columns(len(intents))
-
-    for i, intent in enumerate(intents):
-        with cols[i]:
-            if st.button(intent, key=f"intent_{i}"):
-                st.session_state.intent = intent
-
-    # ===== 並び替え =====
-    sorted_list = sort_by_intent(
-        st.session_state.candidates,
-        st.session_state.intent
+    # =========================
+    # 疲れ度スライダー（0-100 / 5刻み）
+    # =========================
+    fatigue = st.slider(
+        "😴 疲れ度",
+        min_value=0,
+        max_value=100,
+        step=5,
+        value=int(st.session_state.fatigue),
+        key="fatigue_slider"
     )
 
-    # ===== 強制決定（最上部）=====
-    best = force_pick(sorted_list)
+    # ★一方向更新（戻り・ズレ防止）
+    st.session_state.fatigue = fatigue
+
+    # =========================
+    # AI提案
+    # =========================
+    food, category = get_food_by_fatigue(fatigue)
+    mode_label = get_mode_label(category)
 
     st.markdown(f"""
     <div style="
-        background: rgba(255,255,255,0.18);
-        padding: 16px;
-        border-radius: 16px;
         text-align:center;
-        animation: pulse 1.2s infinite;
+        padding:18px;
+        border-radius:16px;
+        background: rgba(255,255,255,0.12);
+        margin-bottom: 12px;
     ">
-        🤖 これでOK → <b>{best}</b>
+        <div style="font-size:14px; opacity:0.8;">
+            🤖 {mode_label}
+        </div>
+        <div style="font-size:28px; font-weight:bold; margin-top:6px;">
+            {food}
+        </div>
     </div>
-
-    <style>
-    @keyframes pulse {{
-        0% {{transform: scale(1);}}
-        50% {{transform: scale(1.05);}}
-        100% {{transform: scale(1);}}
-    }}
-    </style>
     """, unsafe_allow_html=True)
 
-    if st.button(f"👉 これで決定：{best}", key="force"):
-        finalize(best)
-
-    # ===== 候補表示（視線誘導）=====
-    st.markdown("### 👉 他の候補")
-
-    if len(sorted_list) >= 1:
-        if st.button(sorted_list[0], key="top"):
-            finalize(sorted_list[0])
-
-    if len(sorted_list) >= 2:
-        cols = st.columns([1,2,1])
-        with cols[1]:
-            if st.button(sorted_list[1], key="mid"):
-                finalize(sorted_list[1])
-
-    if len(sorted_list) >= 3:
-        if st.button(sorted_list[2], key="bot"):
-            finalize(sorted_list[2])
-
-    # ===== 再抽選 =====
     st.divider()
 
-    if st.button("🔁 もう一回"):
-        st.session_state.candidates = get_today_candidates()
+    # =========================
+    # ボタン群
+    # =========================
+
+    if st.button("🍽 これで決定", use_container_width=True, key="decide"):
+        set_selected(food)
+        return
+
+    if st.button("🛒 食材から選ぶ", use_container_width=True, key="ingredient"):
+        set_page("ingredients")
+        return
+
+    if st.button("🔁 もう一回", use_container_width=True, key="reroll"):
+        reset_candidates(get_today_candidates())
         st.rerun()
-
-
-# =========================
-# 決定処理
-# =========================
-def finalize(food):
-
-    save_log("final", food)
-
-    st.success(f"{food} に決定！")
-    st.info(get_day_label(food))
-
-    time.sleep(1)
-    st.session_state.page = "home"
-    st.rerun()
+        return
