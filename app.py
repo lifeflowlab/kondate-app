@@ -1598,19 +1598,22 @@ def page_home():
         col1, col2, col3 = st.columns(3, gap="small")
         
         with col1:
-            if st.button("気にしない", use_container_width=True, key="cost_free"):
+            if st.button("気にしない", use_container_width=True, key="cost_free",
+                         type="primary" if st.session_state.cost_level == "気にしない" else "secondary"):
                 st.session_state.cost_level = "気にしない"
                 st.session_state.current_recommendations = None
                 st.rerun()
         
         with col2:
-            if st.button("ちょっと節約", use_container_width=True, key="cost_light"):
+            if st.button("ちょっと節約", use_container_width=True, key="cost_light",
+                         type="primary" if st.session_state.cost_level == "ちょっと節約" else "secondary"):
                 st.session_state.cost_level = "ちょっと節約"
                 st.session_state.current_recommendations = None
                 st.rerun()
         
         with col3:
-            if st.button("しっかり節約", use_container_width=True, key="cost_hard"):
+            if st.button("しっかり節約", use_container_width=True, key="cost_hard",
+                         type="primary" if st.session_state.cost_level == "しっかり節約" else "secondary"):
                 st.session_state.cost_level = "しっかり節約"
                 st.session_state.current_recommendations = None
                 st.rerun()
@@ -1628,9 +1631,28 @@ def page_home():
         else:
             st.markdown(f'<div class="info-message">{message}</div>', unsafe_allow_html=True)
 
-        if st.session_state.fatigue_level == 0:
+        if st.session_state.show_roulette:
             st.markdown('<div class="section-separator"></div>', unsafe_allow_html=True)
-            
+
+            if st.button("ルーレット回す", use_container_width=True, key="spin_btn"):
+                selected = spin_roulette(NUTRITIOUS_MEALS)
+                if selected:
+                    cost = COST_MAP.get(selected, "普通")
+
+                    st.session_state.step = "done"
+                    st.session_state.final_food = selected
+                    st.session_state.selected_intent = "栄養しっかり"
+                    st.session_state.selected_cost = cost
+                    st.session_state.show_roulette = False
+                    st.balloons()
+                    st.rerun()
+
+            if st.button("← 戻る", use_container_width=True, key="back_from_roulette"):
+                st.session_state.show_roulette = False
+                st.rerun()
+        elif st.session_state.fatigue_level == 0:
+            st.markdown('<div class="section-separator"></div>', unsafe_allow_html=True)
+
             col1, col2, col3 = st.columns([1, 1, 1], gap="small")
             with col1:
                 if st.button("自分で選ぶ", use_container_width=True, key="select_method_btn"):
@@ -1643,110 +1665,91 @@ def page_home():
             with col3:
                 if st.button("3候補見る", use_container_width=True, key="quick_recommend"):
                     st.session_state.fatigue_level = 50
+                    st.session_state.fatigue_slider = 50
                     st.session_state.current_recommendations = None
                     st.rerun()
         else:
-            if st.session_state.show_roulette:
-                st.markdown('<div class="section-separator"></div>', unsafe_allow_html=True)
-                
-                if st.button("ルーレット回す", use_container_width=True, key="spin_btn"):
-                    selected = spin_roulette(NUTRITIOUS_MEALS)
-                    if selected:
-                        cost = COST_MAP.get(selected, "普通")
-                        
-                        st.session_state.step = "done"
-                        st.session_state.final_food = selected
-                        st.session_state.selected_intent = "栄養しっかり"
-                        st.session_state.selected_cost = cost
-                        st.session_state.show_roulette = False
-                        st.balloons()
-                        st.rerun()
-                
-                if st.button("← 戻る", use_container_width=True, key="back_from_roulette"):
-                    st.session_state.show_roulette = False
-                    st.rerun()
+            if st.session_state.current_recommendations is None:
+                st.session_state.current_recommendations = get_recommendations_by_fatigue(st.session_state.fatigue_level)
+
+            recommendations = st.session_state.current_recommendations
+            if not recommendations or len(recommendations) == 0:
+                recommendations = [{"food": "うどん", "intent": "軽めであっさり", "cost": "安い", "type": "single"}]
+
+            if len(recommendations) == 1:
+                rec = recommendations[0]
+                if rec and "food" in rec and rec.get("food"):
+                    cost_label = get_cost_label(rec.get('cost', '普通'))
+                    ai_reason = generate_reason(rec['food'], st.session_state.fatigue_level, st.session_state.cost_level)
+                    
+                    st.markdown(f"""
+                    <div class="recommended-card">
+                        <div class="recommended-label">おすすめ</div>
+                        <div class="recommended-food">{rec['food']}</div>
+                        <div class="recommended-reason">{REASON_MAP.get(rec.get('intent', ''), '')}</div>
+                        <div class="cost-badge {get_cost_badge_class(rec.get('cost', '普通'))}">{cost_label}</div>
+                        <div class="ai-reason">💡 {ai_reason}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    col1, col2, col3 = st.columns([1, 1, 1], gap="small")
+                    with col1:
+                        if st.button("別の選択肢", use_container_width=True, key="alt1"):
+                            st.session_state.step = "select_method"
+                            st.rerun()
+                    with col2:
+                        if st.button("迷ったら\nおまかせ", use_container_width=True, key="roulette_btn"):
+                            st.session_state.show_roulette = True
+                            st.rerun()
+                    with col3:
+                        if st.button("決定", use_container_width=True, key="dec1"):
+                            score = calc_score(rec.get('intent', '栄養しっかり'))
+                            save(rec['intent'], rec['food'], score, rec.get('cost', '普通'))
+                            st.session_state.step = "done"
+                            st.session_state.final_food = rec['food']
+                            st.session_state.selected_intent = rec.get('intent')
+                            st.session_state.selected_cost = rec.get('cost', '普通')
+                            st.balloons()
+                            st.rerun()
+
             else:
-                if st.session_state.current_recommendations is None:
-                    st.session_state.current_recommendations = get_recommendations_by_fatigue(st.session_state.fatigue_level)
+                st.markdown('<div class="section-separator"></div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-title">おすすめ3選</div>', unsafe_allow_html=True)
 
-                recommendations = st.session_state.current_recommendations
-                if not recommendations or len(recommendations) == 0:
-                    recommendations = [{"food": "うどん", "intent": "軽めであっさり", "cost": "安い", "type": "single"}]
-
-                if len(recommendations) == 1:
-                    rec = recommendations[0]
+                for i, rec in enumerate(recommendations):
                     if rec and "food" in rec and rec.get("food"):
                         cost_label = get_cost_label(rec.get('cost', '普通'))
                         ai_reason = generate_reason(rec['food'], st.session_state.fatigue_level, st.session_state.cost_level)
                         
                         st.markdown(f"""
-                        <div class="recommended-card">
-                            <div class="recommended-label">おすすめ</div>
-                            <div class="recommended-food">{rec['food']}</div>
-                            <div class="recommended-reason">{REASON_MAP.get(rec.get('intent', ''), '')}</div>
+                        <div class="recommendation-item">
+                            <div class="recommendation-title">{rec.get('description', '')}</div>
+                            <div class="recommendation-food-name">{rec['food']}</div>
                             <div class="cost-badge {get_cost_badge_class(rec.get('cost', '普通'))}">{cost_label}</div>
                             <div class="ai-reason">💡 {ai_reason}</div>
                         </div>
                         """, unsafe_allow_html=True)
 
-                        col1, col2, col3 = st.columns([1, 1, 1], gap="small")
-                        with col1:
-                            if st.button("別の選択肢", use_container_width=True, key="alt1"):
-                                st.session_state.step = "select_method"
-                                st.rerun()
-                        with col2:
-                            if st.button("迷ったら\nおまかせ", use_container_width=True, key="roulette_btn"):
-                                st.session_state.show_roulette = True
-                                st.rerun()
-                        with col3:
-                            if st.button("決定", use_container_width=True, key="dec1"):
-                                score = calc_score(rec.get('intent', '栄養しっかり'))
-                                save(rec['intent'], rec['food'], score, rec.get('cost', '普通'))
-                                st.session_state.step = "done"
-                                st.session_state.final_food = rec['food']
-                                st.session_state.selected_intent = rec.get('intent')
-                                st.session_state.selected_cost = rec.get('cost', '普通')
-                                st.balloons()
-                                st.rerun()
-
-                else:
-                    st.markdown('<div class="section-separator"></div>', unsafe_allow_html=True)
-                    st.markdown('<div class="section-title">おすすめ3選</div>', unsafe_allow_html=True)
-
-                    for i, rec in enumerate(recommendations):
-                        if rec and "food" in rec and rec.get("food"):
-                            cost_label = get_cost_label(rec.get('cost', '普通'))
-                            ai_reason = generate_reason(rec['food'], st.session_state.fatigue_level, st.session_state.cost_level)
-                            
-                            st.markdown(f"""
-                            <div class="recommendation-item">
-                                <div class="recommendation-title">{rec.get('description', '')}</div>
-                                <div class="recommendation-food-name">{rec['food']}</div>
-                                <div class="cost-badge {get_cost_badge_class(rec.get('cost', '普通'))}">{cost_label}</div>
-                                <div class="ai-reason">💡 {ai_reason}</div>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                            if st.button(f"この「{rec['food']}」にする", use_container_width=True, key=f"recommend_{i}"):
-                                score = calc_score(rec.get('intent', '栄養しっかり'))
-                                save(rec['intent'], rec['food'], score, rec.get('cost', '普通'))
-                                st.session_state.step = "done"
-                                st.session_state.final_food = rec['food']
-                                st.session_state.selected_intent = rec.get('intent')
-                                st.session_state.selected_cost = rec.get('cost', '普通')
-                                st.balloons()
-                                st.rerun()
-
-                    st.markdown('<div class="section-separator"></div>', unsafe_allow_html=True)
-                    col1, col2 = st.columns(2, gap="small")
-                    with col1:
-                        if st.button("別の選択肢", use_container_width=True, key="alt2"):
-                            st.session_state.step = "select_method"
+                        if st.button(f"この「{rec['food']}」にする", use_container_width=True, key=f"recommend_{i}"):
+                            score = calc_score(rec.get('intent', '栄養しっかり'))
+                            save(rec['intent'], rec['food'], score, rec.get('cost', '普通'))
+                            st.session_state.step = "done"
+                            st.session_state.final_food = rec['food']
+                            st.session_state.selected_intent = rec.get('intent')
+                            st.session_state.selected_cost = rec.get('cost', '普通')
+                            st.balloons()
                             st.rerun()
-                    with col2:
-                        if st.button("迷ったら\nおまかせ", use_container_width=True, key="roulette_btn2"):
-                            st.session_state.show_roulette = True
-                            st.rerun()
+
+                st.markdown('<div class="section-separator"></div>', unsafe_allow_html=True)
+                col1, col2 = st.columns(2, gap="small")
+                with col1:
+                    if st.button("別の選択肢", use_container_width=True, key="alt2"):
+                        st.session_state.step = "select_method"
+                        st.rerun()
+                with col2:
+                    if st.button("迷ったら\nおまかせ", use_container_width=True, key="roulette_btn2"):
+                        st.session_state.show_roulette = True
+                        st.rerun()
 
     elif st.session_state.step == "select_method":
 
