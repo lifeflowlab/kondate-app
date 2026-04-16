@@ -1,5 +1,4 @@
 import streamlit as st
-import random
 
 from src.logic import (
     get_today_candidates,
@@ -22,17 +21,17 @@ def render_home():
         reset_candidates(get_today_candidates())
 
     # =========================
-    # ★重要：疲れ度初期化（50固定保証）
+    # ★重要：疲れ度初期化（50固定・3完全排除）
     # =========================
     if (
         "fatigue" not in st.session_state
         or st.session_state.fatigue is None
-        or st.session_state.fatigue == 3   # ← 旧バグ対策（ここ重要）
+        or st.session_state.fatigue == 3   # ← 旧バグ完全対策
     ):
-        st.session_state.fatigue = get_default_fatigue()
+        st.session_state.fatigue = 50
 
     # =========================
-    # 疲れ度スライダー（0-100 / 5刻み）
+    # 疲れ度スライダー
     # =========================
     fatigue = st.slider(
         "😴 疲れ度",
@@ -43,15 +42,29 @@ def render_home():
         key="fatigue_slider"
     )
 
-    # ★一方向更新（戻り・ズレ防止）
+    # ★一方向更新（戻り防止）
     st.session_state.fatigue = fatigue
 
     # =========================
-    # AI提案
+    # 表示料理（固定キャッシュ）
     # =========================
-    food, category = get_food_by_fatigue(fatigue)
+    if (
+        "current_food" not in st.session_state
+        or st.session_state.get("last_fatigue") != fatigue
+    ):
+        food, category = get_food_by_fatigue(fatigue)
+        st.session_state.current_food = food
+        st.session_state.current_category = category
+        st.session_state.last_fatigue = fatigue
+
+    food = st.session_state.current_food
+    category = st.session_state.current_category
+
     mode_label = get_mode_label(category)
 
+    # =========================
+    # 表示UI
+    # =========================
     st.markdown(f"""
     <div style="
         text-align:center;
@@ -72,7 +85,7 @@ def render_home():
     st.divider()
 
     # =========================
-    # ボタン群
+    # ボタン
     # =========================
 
     if st.button("🍽 これで決定", use_container_width=True, key="decide"):
@@ -84,6 +97,11 @@ def render_home():
         return
 
     if st.button("🔁 もう一回", use_container_width=True, key="reroll"):
-        reset_candidates(get_today_candidates())
+
+        # キャッシュ完全削除
+        st.session_state.pop("current_food", None)
+        st.session_state.pop("current_category", None)
+        st.session_state.pop("last_fatigue", None)
+
         st.rerun()
         return
